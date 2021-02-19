@@ -1,0 +1,193 @@
+#!/usr/bin/env python3
+#
+# Licensed Materials - Property of IBM
+#
+# 5737-I09
+#
+# Copyright IBM Corp. 2019 All Rights Reserved.
+# US Government Users Restricted Rights - Use, duplication or
+# disclosure restricted by GSA ADP Schedule Contract with IBM Corp
+#
+import sys, os, logging, shutil
+from OpenSSL import crypto
+from cicd.openssl import gen_ca, gen_csr, sign_csr
+import uuid
+
+class ClientCertificate:
+    def __init__(self, numeric_level, params):
+        logging.basicConfig(level=numeric_level, stream=sys.stdout)
+        self.params = params
+        if not 'container_name' in self.params:
+            self.params['container_name'] = 'container' # simple string to make the naming convention consistent when no container_name is given.
+        if (not 'client_crt_key' in self.params or self.params['client_crt_key'] == '') and 'container_name' in self.params:
+            client_crt_key = '.' + self.params['container_name'] + "-" + self.params['uuid']
+            self.params['client_crt_key'] = client_crt_key
+            self.params['default_client_crt_key'] = True
+
+        # store all cert paths
+        self.client_crt_key = './' + self.params['client_crt_key']
+        self.cert_dir = self.client_crt_key + '.d'
+
+        # set up default file paths if not specificed through a config json file or command-line parameters
+        if not 'capath' in self.params:
+            self.params['capath'] = self.cert_dir + '/client-ca.pem'
+        if not 'cakeypath' in self.params:
+            self.params['cakeypath'] = self.cert_dir + '/client-ca-key.pem'
+        if not 'certpath' in self.params:
+            self.params['certpath'] = self.cert_dir + '/server-cert.pem'
+        if not 'csrpath' in self.params:
+            self.params['csrpath'] = self.cert_dir + '/server-csr.pem'
+
+        if not os.path.isdir(self.cert_dir):
+            pem_files = (self.params['capath'], self.params['cakeypath'], self.params['certpath'], self.params['csrpath'])
+            for pem_file in pem_files:
+                if self.cert_dir in pem_file:
+                    try:
+                        os.mkdir(self.cert_dir)
+                        break
+                    except Exception as e:
+                        logging.error('failed to create a working directory at {} e={}'.format(self.cert_dir, e))
+                        sys.exit(-1)
+
+        if 'verbose' in self.params:
+            self.verbose = int(self.params['verbose'])
+        else:
+            self.verbose = 0
+        if 'cloud' in self.params:
+            self.cloud = self.params['cloud']
+        else:
+            self.cloud = 0
+        # logging.info('found client_crt_key={}'.format(self.params['client_crt_key']))
+
+    def status(self):
+        logging.info('status called')
+        return 'OK'
+
+    def sign_csr(self):
+        capath = self.params['capath']
+        cakeypath = self.params['cakeypath']
+        certpath = self.params['certpath']
+        csrpath = self.params['csrpath']
+        sign_csr(certpath, csrpath, capath, cakeypath)
+
+    def client_certificate(self, gen_cert=True):
+        client_crt_key = self.params['client_crt_key']
+        capath = self.params['capath']
+        cakeypath = self.params['cakeypath']
+        if os.path.exists(client_crt_key) and os.path.exists(capath) and os.path.exists(cakeypath):
+            logging.info('client_certificate: using supplied pem files client_crt_key={} capath={} cakeypath={}'.format(client_crt_key, capath, cakeypath))
+            gen_cert = False
+        if gen_cert == False:
+            cert = None
+            ca = None
+            end_cert = '-----END CERTIFICATE-----\n'
+            if os.path.exists(client_crt_key):
+                with open(client_crt_key) as f:
+                    crt_key = f.read()
+                (cert, key) = crt_key.split(end_cert)
+                cert = cert + end_cert
+            capath = self.params['capath']
+            if os.path.exists(capath):
+                with open(capath, 'r') as f:
+                    ca = f.read()
+            return cert, ca
+
+        logging.info('client_certificate: generating client CA and certificate')
+        if self.cloud:
+            cert_dir = self.cert_dir
+            if not os.path.isdir(cert_dir):
+                try:
+                    os.mkdir(cert_dir)
+                except Exception as e:
+                    logging.error('failed to create a working directory at {} e={}'.format(cert_dir, e))
+                    sys.exit(-1)
+
+            ca_subject = '/C=US/ST=NY/L=Armonk/O=IBM/OU=Digital Assets/CN=Client CA'
+            cert_subject = '/C=US/ST=NY/L=Armonk/O=IBM/OU=Digital Assets/CN=Client'
+
+            ca_path = cert_dir+'/client-ca.pem'
+            ca_key_path = cert_dir+'/client-ca-key.pem'
+            csr_path = cert_dir+'/client-csr.pem'
+            cert_key_path = cert_dir+'/client-cert-key.pem'
+            cert_path = cert_dir+'/client-cert.pem'
+
+            self.exit_if_exist(ca_path, ca_key_path, csr_path, cert_key_path, cert_path)
+
+            ca_cert, _ = gen_ca(ca_subject, ca_path, ca_key_path)
+            _, cert_key = gen_csr(cert_subject, csr_path, cert_key_path)
+            cert = sign_csr(cert_path, csr_path, ca_path, ca_key_path)
+
+            ca_bytes = crypto.dump_certificate(crypto.FILETYPE_PEM, ca_cert)
+            pkey_bytes = crypto.dump_privatekey(crypto.FILETYPE_PEM, cert_key)
+            cert_bytes = crypto.dump_certificate(crypto.FILETYPE_PEM, cert)
+
+            if os.path.exists('./' + client_crt_key):
+                logging.fatal('exiting since a client certificate file, ./' + client_crt_key + ', already exists')
+                sys.exit(-1)
+            with open('./' + client_crt_key, 'w') as f:
+                f.write(cert_bytes.decode('utf-8'))
+                f.write(pkey_bytes.decode('utf-8'))
+
+            with open(cert_dir+'/client-cert-bundle.pem', 'w') as f:
+                f.write(cert_bytes.decode('utf-8'))
+                f.write(ca_bytes.decode('utf-8'))
+
+            return cert_bytes.decode('utf-8'), ca_bytes.decode('utf-8')
+
+        pkey = crypto.PKey()
+        pkey.generate_key(crypto.TYPE_RSA, 2048)
+
+        pkey_bytes = crypto.dump_privatekey(crypto.FILETYPE_PEM, pkey)
+
+        req = crypto.X509Req()
+        subject = req.get_subject()
+        subject.commonName = os.uname()[1]
+        req.set_pubkey(pkey)
+        req.sign(pkey, 'md5')
+
+        cert = crypto.X509()
+        cert.set_serial_number(1)
+        cert.gmtime_adj_notBefore(0)
+        cert.gmtime_adj_notAfter(60*60*24*365) # 1 year
+        cert.set_issuer(req.get_subject())
+        cert.set_subject(req.get_subject())
+        cert.set_pubkey(req.get_pubkey())
+        cert.sign(pkey, "md5")
+
+        cert_bytes = crypto.dump_certificate(crypto.FILETYPE_PEM, cert)
+
+        if os.path.exists('./' + client_crt_key):
+            logging.fatal('exiting since a client certificate file, ./' + client_crt_key + ', already exists')
+            sys.exit(-1)
+        with open('./' + client_crt_key, 'w') as f:
+            f.write(cert_bytes.decode('utf-8'))
+            f.write(pkey_bytes.decode('utf-8'))
+
+        #print("generated cert_bytes: " + cert_bytes.decode('utf-8'))
+        return cert_bytes, None
+
+    def exit_if_exist(self, *files):
+        existing_files = []
+        for file in files:
+            if os.path.isfile(file):
+                existing_files.append(file)
+        if len(existing_files) > 0:
+            logging.error('client_certificate: exiting because the following files already exist - {}'.format(' '.join(existing_files)))
+            logging.error('client_certificate: speficy CLIENT_CRT_KEY, CAPATH, and CAKEYPATH or empty the directory')
+
+            sys.exit(-1)
+
+    def delete_certificates(self):
+        if 'client_crt_key' in self.params and 'default_client_crt_key' in self.params and self.params['default_client_crt_key']:
+            client_crt_key = self.params['client_crt_key']
+            client_crt_path = './' + client_crt_key
+            if os.path.exists(client_crt_path):
+                os.remove(client_crt_path)
+                if self.verbose > 0:
+                    logging.info('client_crt ' + client_crt_path + ' has been deleted')
+            else:
+                if self.verbose > 0:
+                    logging.info('client_crt ' + client_crt_path + ' did not exist')
+            client_crt_dir = client_crt_path + '.d'
+            if os.path.isdir(client_crt_dir):
+                shutil.rmtree(client_crt_dir)
