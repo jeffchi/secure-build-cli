@@ -347,7 +347,7 @@ docker.io.prabhat54331.sbs22.s390x-v0.1-60fd72e.2020-10-21_07-20-08.516797
 ## How to recover the state image
 Complete the following steps:   
 
-1. Create a new SBS server as mentioned in the section [Deploying the Secure Build Server](CLOUD.md#deploying-the-secure-build-server),  and use the same secret that was used to get the state image, otherwise the post state image operation fails.
+1. Create a new SBS server as mentioned in the section [Deploying the Secure Build Server](README.md#deploying-the-secure-build-server),  and use the same secret that was used to get the state image, otherwise the post state image operation fails.
 
 2. Check the status of SBS.
 ```buildoutcfg
@@ -393,7 +393,7 @@ Complete the following steps:
 ## How to recover state image from Cloud object
 Complete the following steps:  
 
-1. Create a new SBS server as mentioned in the section [Deploying the Secure Build Server](CLOUD.md#deploying-the-secure-build-server), and use the same secret that was used to get the state image, otherwise the post state image operation fails.
+1. Create a new SBS server as mentioned in the section [Deploying the Secure Build Server](README.md#deploying-the-secure-build-server), and use the same secret that was used to get the state image, otherwise the post state image operation fails.
 
 2. Check the status of SBS.
 ```buildoutcfg
@@ -459,14 +459,14 @@ Note: After the secret is updated, you cannot use a state image obtained using t
 
 ## License
 
-[Apache 2.0](https://github.com/ibm-hyper-protect/secure-build-cli/blob/master/LICENSE)
+[Apache 2.0](https://github.com/ibm-hyper-protect/secure-build-cli/blob/main/LICENSE)
 
 ## Contributor License Agreement (CLA)
 
-To contribute to the secure-bitcoin-wallet project, it is required to sign the 
-[individual CLA form](https://gist.github.com/moriohara/6ecc6cca48f4c018160e35ebd4e0eb8a) 
-if you're contributing as an individual, or 
-[corporate CLA form](https://gist.github.com/moriohara/e2ad4706f1142089c181d1583f8e6883) 
+To contribute to the secure-build-cli project, it is required to sign the
+[individual CLA form](https://gist.github.com/moriohara/6ecc6cca48f4c018160e35ebd4e0eb8a)
+if you're contributing as an individual, or
+[corporate CLA form](https://gist.github.com/moriohara/e2ad4706f1142089c181d1583f8e6883)
 if you're contributing as part of your job.
 
-You are only required to do this once at on-line with [cla-assistant](https://github.com/cla-assistant/cla-assistant) when a PR is created, and then you are free to contribute to the secure-bitcoin-wallet project.
+You are only required to do this once at on-line with [cla-assistant](https://github.com/cla-assistant/cla-assistant) when a pull request is created, and then you are free to contribute to the secure-build-cli project.
