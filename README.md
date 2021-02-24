@@ -459,7 +459,7 @@ Note: After the secret is updated, you cannot use a state image obtained using t
 
 ## License
 
-[Apache 2.0](https://github.com/ibm-hyper-protect/secure-build-cli/blob/master/LICENSE)
+[Apache 2.0](https://github.com/ibm-hyper-protect/secure-build-cli/blob/main/LICENSE)
 
 ## Contributor License Agreement (CLA)
 
