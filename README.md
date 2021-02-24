@@ -463,10 +463,10 @@ Note: After the secret is updated, you cannot use a state image obtained using t
 
 ## Contributor License Agreement (CLA)
 
-To contribute to the secure-bitcoin-wallet project, it is required to sign the
+To contribute to the secure-build-cli project, it is required to sign the
 [individual CLA form](https://gist.github.com/moriohara/6ecc6cca48f4c018160e35ebd4e0eb8a)
 if you're contributing as an individual, or
 [corporate CLA form](https://gist.github.com/moriohara/e2ad4706f1142089c181d1583f8e6883)
 if you're contributing as part of your job.
 
-You are only required to do this once at on-line with [cla-assistant](https://github.com/cla-assistant/cla-assistant) when a PR is created, and then you are free to contribute to the secure-bitcoin-wallet project.
+You are only required to do this once at on-line with [cla-assistant](https://github.com/cla-assistant/cla-assistant) when a pull request is created, and then you are free to contribute to the secure-build-cli project.
