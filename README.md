@@ -16,7 +16,7 @@ Secure Build Service is basically used to build and sign docker images where sig
 ## Before you begin
 
 The following is a list of hardware or software requirements:
-- Linux management server from where you can run the build CLI tool(Linux workstation).
+- Linux management server from where you can run the build CLI tool (Linux workstation or VM).
   - x86 architecture (recommended 2 CPUs/4GB memory or more)
   - Ubuntu 18.04 or 16.04 (64 bit)
   - Python 3.6 (Python 2.x is not supported)
@@ -90,7 +90,7 @@ DOCKER_CONTENT_TRUST_BASE - If your base image that is mentioned in the Dockerfi
 DOCKER_CONTENT_TRUST_BASE_SERVER - If your base image mentioned in the Dockerfile is signed, then you can specify the notary URL (default: https://notary.docker.io).
 DOCKER_RO_USER - you can use the same as DOCKER_USER. It is recommended that you specify a user who has read access only to your Docker repository.
 DOCKER_RO_PASSWORD - you can use same as DOCKER_PASSWORD. It is recommended that you specify a user who has read access only to your Docker repository.
-ENV_WHITELIST - All environment variable names need to be listed. The Hyper Protect Virtual Servers don't allow ant environment variable unless it is in this list because of a security reason.
+ENV_WHITELIST - All environment variable names need to be listed. The Hyper Protect Virtual Servers don't allow any environment variable unless it is in this list because of a security reason.
 ARG - You have to pass all build argument parameters as you pass during Docker build.
 ```
 
