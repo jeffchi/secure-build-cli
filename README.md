@@ -16,7 +16,7 @@ Secure Build Service is basically used to build and sign docker images where sig
 ## Before you begin
 
 The following is a list of hardware or software requirements:
-- Linux management server from where you can run the build CLI tool(Linux workstation).
+- Linux management server from where you can run the build CLI tool (Linux workstation or VM).
   - x86 architecture (recommended 2 CPUs/4GB memory or more)
   - Ubuntu 18.04 or 16.04 (64 bit)
   - Python 3.6 (Python 2.x is not supported)
