@@ -66,7 +66,7 @@ Create the `sbs-config.json` file and add the following content in the file:
   "DOCKER_RO_PASSWORD": "<docker_password>",
   "ENV_WHITELIST":  ["<KEY1>", "<KEY2>"],
   "ARG": {
-    "<BUILD_ARG1>": "<VALUE1>"
+    "<BUILD_ARG1>": "<VALUE1>",
     "<BUILD_ARG2>": "<VALUE2>"
   }
 }
