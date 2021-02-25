@@ -124,7 +124,7 @@ ibmcloud plugin install hpvs
 
 2. Log in to IBM Cloud by using either an API key, or the Single Sign On (SSO) authentication. See [Getting started with the IBM Cloud CLI](https://cloud.ibm.com/docs/cli?topic=cli-getting-started) for more details.
 
-3. Create certificae-authority (CA) and client certificates which are used for secure communication from your client script to the SBS instance.
+3. Create certificate-authority (CA) and client certificates which are used for secure communication from your client script to the SBS instance.
 ```buildoutcfg
 ./build.py create-client-cert --env sbs-config.json
 ```
@@ -281,7 +281,7 @@ This will store your manifest file to IBM Cloud Object Storage.
 
 ## How to get the Manifest file
 
-1. Add the following parameters to your `sbs-config.json` file.
+1. Get the latest manifest file directly from SBS.
 ```buildoutcfg
 ./build.py get-manifest --env sbs-config.json
 ```
