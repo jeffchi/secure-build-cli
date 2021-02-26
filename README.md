@@ -466,6 +466,28 @@ Use the `--name` option to specifiy the name of the state image on COS, which is
 ./build.py status --env sbs-config.json
 ```
 
+## How to stop and clean up a build process
+SBS can take one build task at a time. If you want to start another build before an on-going
+build completes successfully or prematurely with an error, you need to stop and clean up 
+the on-going build first.
+
+1. You can always check the status of SBS using the `status` command.
+```buildoutcfg
+./build.py status --env sbs-config.json
+```
+
+2. Clean up SBS if you want to run another build without waiting for an on-going build to complete.
+```buildoutcfg
+./build.py clean --env sbs-config.json
+```
+
+3. Check the status again.
+```buildoutcfg
+./build.py status --env sbs-config.json
+```
+After the `clean` command completes successfully, the `status` command should return `restarted cicd`. This indicates the build service (cicd)
+has been restarted and is ready to accept a new `build` command.
+
 ## How to change the SECRET to a randomly generated NEW_SECRET
 Complete the following steps:  
 
