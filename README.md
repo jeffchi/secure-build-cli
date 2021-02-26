@@ -179,6 +179,13 @@ After you create the SBS instance, complete the following steps to build your im
 ```buildoutcfg
 ./build.py status --env sbs-config.json --noverify
 ```
+Before initializing SBS, it returns an empty string as status.
+```
+INFO:__main__:status: response={
+    "status": ""
+}
+```
+
 2. Get a server certificate-signing-request (CSR) to sign with your CA.
 ```buildoutcfg
 ./build.py get-server-csr --env sbs-config.json --noverify
@@ -194,6 +201,15 @@ After you create the SBS instance, complete the following steps to build your im
 5. Now again check the status without `noverify` option.
 ```buildoutcfg
 ./build.py status --env sbs-config.json
+```
+The `post-server-cert` command lets SBS to install the signed certificate and 
+to restart the nginx server to make it effective.
+From here, you don't need `--noverify`; the client verifies the server certificate
+at every API call.
+```
+INFO:__main__:status: response={
+    "status": "restarted nginx"
+}
 ```
 6. Initialize the configuration.
 ```buildoutcfg
@@ -211,7 +227,39 @@ After you create the SBS instance, complete the following steps to build your im
 ```buildoutcfg
 ./build.py status --env sbs-config.json
 ```
-
+As the build process makes a progress, the `status` response shows the last completed step.
+Here is a typical sequence of responses for a successful build. 
+```
+{
+  ...
+    "status": "cleaned up"
+}
+{
+  ...
+    "status": "github cloned"
+}
+{
+  ...
+    "status": "image built"
+}
+{
+  ...
+    "status": "image pushed"
+}
+{
+  ...
+    "status": "success"
+}
+```
+When an error occurrs, the `status` response shows the command that caused the error. Typically, you need to examine the build log
+to fix the issue.
+```
+{
+  ...
+    "status": "exiting due to a non-zero return value: 1, cmd: docker build --disable-content-trust=false -t docker.io/abhiramk/nginxapp:latest -f Dockerfile ."
+}
+```
+To stop a long-running build process, refer to [How to stop and clean up a build process](README.md#how-to-stop-and-clean-up-a-build-process).
 
 ## How to deploy the image that is built by using SBS
 Complete the following steps:  
@@ -487,6 +535,12 @@ the on-going build first.
 ```
 After the `clean` command completes successfully, the `status` command should return `restarted cicd`. This indicates the build service (cicd)
 has been restarted and is ready to accept a new `build` command.
+```
+{
+...
+    "status": "restarted cicd"
+}
+```
 
 ## How to change the SECRET to a randomly generated NEW_SECRET
 Complete the following steps:  
