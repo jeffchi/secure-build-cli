@@ -480,7 +480,7 @@ class Build:
         env_vars['CLIENT_CRT'] = base64.b64encode(cert.encode('utf-8')).decode('utf-8')
         env_vars['CLIENT_CA'] = base64.b64encode(ca.encode('utf-8')).decode('utf-8')
         env = ' '.join(['-e '+key+'='+value for key, value in env_vars.items()])
-        logger.info('env="{}"'.format(env))
+        print(env)
         return env
 
         logger.info('a json config file has been written to {}.'.format(repo_regfile_name + '.json'))
