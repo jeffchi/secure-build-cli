@@ -179,7 +179,7 @@ After you create the SBS instance, complete the following steps to build your im
 ```buildoutcfg
 ./build.py status --env sbs-config.json --noverify
 ```
-2. Get a server certificae-signing-request (CSR) to sign with your CA.
+2. Get a server certificate-signing-request (CSR) to sign with your CA.
 ```buildoutcfg
 ./build.py get-server-csr --env sbs-config.json --noverify
 ```
