@@ -202,7 +202,7 @@ INFO:__main__:status: response={
 ```buildoutcfg
 ./build.py status --env sbs-config.json
 ```
-The `post-server-cert` command lets SBS to install the signed certificate and 
+The `post-server-cert` command lets SBS to install the signed certificate and
 to restart the nginx server to make it effective.
 From here, you don't need `--noverify`; the client verifies the server certificate
 at every API call.
@@ -228,7 +228,7 @@ INFO:__main__:status: response={
 ./build.py status --env sbs-config.json
 ```
 As the build process makes a progress, the `status` response shows the last completed step.
-Here is a typical sequence of responses for a successful build. 
+Here is a typical sequence of responses for a successful build.
 ```
 {
   ...
@@ -499,24 +499,26 @@ Complete the following steps:
 Use the `--state-bucket-name` option, if you want to override the parameter in `sbs-config.json` or you don't have one in the file.
 Use the `--name` option to specifiy the name of the state image on COS, which is the same as the name of the meta data file you downloaded with the `get-state-image` command.
 
-10. Now you can further build your image using build command. Eventually your Docker image will be pushed to same registry.
+10.  Now you can update your image using the build update command.
+```buildoutcfg
+./build.py update --env sbs-config.json
+```
+11. You can build your image using build command. Eventually your Docker image will be pushed to same registry.
 ```buildoutcfg
 ./build.py build --env sbs-config.json
 ```
-
-11. Check the build log and wait until the build operation is completed.
+12. Check the build log and wait until the build operation is completed.
 ```buildoutcfg
 ./build.py log --log build --env sbs-config.json
 ```
-
-12. Check the status of SBS.
+13. Check the status of SBS.
 ```buildoutcfg
 ./build.py status --env sbs-config.json
 ```
 
 ## How to stop and clean up a build process
 SBS can take one build task at a time. If you want to start another build before an on-going
-build completes successfully or prematurely with an error, you need to stop and clean up 
+build completes successfully or prematurely with an error, you need to stop and clean up
 the on-going build first.
 
 1. You can always check the status of SBS using the `status` command.
