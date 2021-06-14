@@ -499,7 +499,7 @@ Complete the following steps:
 Use the `--state-bucket-name` option, if you want to override the parameter in `sbs-config.json` or you don't have one in the file.
 Use the `--name` option to specifiy the name of the state image on COS, which is the same as the name of the meta data file you downloaded with the `get-state-image` command.
 
-10.  Now you can update your image using the build update command.
+10. Update the configuration.
 ```buildoutcfg
 ./build.py update --env sbs-config.json
 ```
