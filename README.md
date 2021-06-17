@@ -125,19 +125,18 @@ ibmcloud plugin install hpvs
 2. Log in to IBM Cloud by using either an API key, or the Single Sign On (SSO) authentication. See [Getting started with the IBM Cloud CLI](https://cloud.ibm.com/docs/cli?topic=cli-getting-started) for more details.
 
 3. Complete the following steps.
-   1. To generate the Client and CA certificate, complete the following steps.
-      Create certificate-authority (CA) and client certificates which are used for secure communication from your client script to the SBS instance.
+   1. Create certificate-authority (CA) and client certificates which are used for secure communication from your client script to the SBS instance.
       ```buildoutcfg
       ./build.py create-client-cert --env sbs-config.json
       ```
       After you execute above command, a directory is generated that looks like this: `.SBContainer-9ab033ad-5da1-4c4e-8eae-ca8c468dbbcc.d`.
       You can notice that two parameters "UUID" and "SECRET", are added to the `sbs-config.json` file.
       UUID is used along with the container name where the generated certificates are stored.
-      SECRET holds a randomly generated value, which needs to be preserved safely, used to deal with a state image of SBS. Continue to step #4.
-      Note:-  
+      SECRET holds a randomly generated value, which needs to be preserved safely, used to deal with a state image of SBS. Continue to step #4.  
+      Note:-    
       - Follow best practices of certificate management
       - The CA certificate should not be compromised or revoked.
-   2. To use the user generated CA and Client certificate, complete the following steps.
+   2. To use the user generated CA and client certificates, complete the following steps.
       1. Run the following command:
          ```
          cd ~/git/secure-build-cli
@@ -159,8 +158,8 @@ ibmcloud plugin install hpvs
           ```
           ibmcloud hpvs instance-create docker.io-ibmzcontainers-acrux-dev1 lite-s syd05 --rd-path secure_build.asc --image-tag 1.3.0 $CERT_ENV
           ```
-          Continue to step #6      
-          Note:-   
+          Continue to step #6.          
+          Note:-     
          - Follow best practices of certificate management
          - The CA certificate should not be compromised or revoked.
 4. Copy your CA and client certificates under directory `.SBContainer-9ab033ad-5da1-4c4e-8eae-ca8c468dbbcc.d` to file `client_base64` and `ca_base64` in a base64 format respectively.
