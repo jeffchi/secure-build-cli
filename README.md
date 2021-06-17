@@ -134,7 +134,7 @@ ibmcloud plugin install hpvs
       UUID is used along with the container name where the generated certificates are stored.
       SECRET holds a randomly generated value, which needs to be preserved safely, used to deal with a state image of SBS. Continue to step #4.  
       Note:-    
-      - Follow best practices of certificate management
+      - Follow the best practices of certificate management.
       - The CA certificate should not be compromised or revoked.
    2. To use the user generated CA and client certificates, complete the following steps.
       1. Run the following command:
@@ -160,7 +160,7 @@ ibmcloud plugin install hpvs
           ```
           Continue to step #6.          
           Note:-     
-         - Follow best practices of certificate management
+         - Follow the best practices of certificate management. 
          - The CA certificate should not be compromised or revoked.
 4. Copy your CA and client certificates under directory `.SBContainer-9ab033ad-5da1-4c4e-8eae-ca8c468dbbcc.d` to file `client_base64` and `ca_base64` in a base64 format respectively.
 ```buildoutcfg
