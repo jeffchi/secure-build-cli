@@ -124,15 +124,45 @@ ibmcloud plugin install hpvs
 
 2. Log in to IBM Cloud by using either an API key, or the Single Sign On (SSO) authentication. See [Getting started with the IBM Cloud CLI](https://cloud.ibm.com/docs/cli?topic=cli-getting-started) for more details.
 
-3. Create certificate-authority (CA) and client certificates which are used for secure communication from your client script to the SBS instance.
-```buildoutcfg
-./build.py create-client-cert --env sbs-config.json
-```
-After you execute above command, a directory is generated that looks like this: `.SBContainer-9ab033ad-5da1-4c4e-8eae-ca8c468dbbcc.d`.
-You can notice that two parameters "UUID" and "SECRET", are added to the `sbs-config.json` file.
-UUID is used along with the container name where the generated certificates are stored.
-SECRET holds a randomly generated value, which needs to be preserved safely, used to deal with a state image of SBS.
-
+3. Complete the following steps.
+   1. To generate the Client and CA certificate, complete the following steps.
+      Create certificate-authority (CA) and client certificates which are used for secure communication from your client script to the SBS instance.
+      ```buildoutcfg
+      ./build.py create-client-cert --env sbs-config.json
+      ```
+      After you execute above command, a directory is generated that looks like this: `.SBContainer-9ab033ad-5da1-4c4e-8eae-ca8c468dbbcc.d`.
+      You can notice that two parameters "UUID" and "SECRET", are added to the `sbs-config.json` file.
+      UUID is used along with the container name where the generated certificates are stored.
+      SECRET holds a randomly generated value, which needs to be preserved safely, used to deal with a state image of SBS. Continue to step #4.
+      Note:-  
+      - Follow best practices of certificate management
+      - The CA certificate should not be compromised or revoked.
+   2. To use the user generated CA and Client certificate, complete the following steps.
+      1. Run the following command:
+         ```
+         cd ~/git/secure-build-cli
+         ```
+      2. Create the `sbs-config.json` file to include the path names of the generated certificates.
+         Note:- The `server-csr.pem` and `server-cert.pem` do not exist as yet.
+         ```
+         "CAPATH": "Path to CA certificate",
+         "CAKEYPATH": "Path to CA key",
+         "CLIENT_CRT_KEY": "Path to concatenated client cert and key",   //cat my-client-cert.pem my-client-cert-key.pem > my-client-cert-and-key.pem
+         "CSRPATH": "./sbs-keys/server-csr.pem",
+         "CERTPATH": "./sbs-keys/server-cert.pem",
+         ```
+         To get the base64-encoded certificates into CERT_ENV using build.py, run the following command:
+         ```
+         CERT_ENV=`./build.py instance-env --env sbs-config.json`
+         ```
+      3. Create a the Hyper Protect Virtual Servers instance by using the `ibmcloud hpvs instance-create command`.  
+          ```
+          ibmcloud hpvs instance-create docker.io-ibmzcontainers-acrux-dev1 lite-s syd05 --rd-path secure_build.asc --image-tag 1.3.0 $CERT_ENV
+          ```
+          Continue to step #6      
+          Note:-   
+         - Follow best practices of certificate management
+         - The CA certificate should not be compromised or revoked.
 4. Copy your CA and client certificates under directory `.SBContainer-9ab033ad-5da1-4c4e-8eae-ca8c468dbbcc.d` to file `client_base64` and `ca_base64` in a base64 format respectively.
 ```buildoutcfg
 echo $(cat .SBContainer-9ab033ad-5da1-4c4e-8eae-ca8c468dbbcc.d/client-cert.pem | base64) | tr -d ' ' > client_base64
@@ -251,7 +281,7 @@ Here is a typical sequence of responses for a successful build.
     "status": "success"
 }
 ```
-When an error occurrs, the `status` response shows the command that caused the error. Typically, you need to examine the build log
+When an error occurs, the `status` response shows the command that caused the error. Typically, you need to examine the build log
 to fix the issue.
 ```
 {
@@ -567,4 +597,4 @@ if you're contributing as an individual, or
 [corporate CLA form](https://gist.github.com/moriohara/e2ad4706f1142089c181d1583f8e6883)
 if you're contributing as part of your job.
 
-You are only required to do this once at on-line with [cla-assistant](https://github.com/cla-assistant/cla-assistant) when a pull request is created, and then you are free to contribute to the secure-build-cli project.
+You are required to do this only once at on-line with [cla-assistant](https://github.com/cla-assistant/cla-assistant) when a pull request is created, and then you are free to contribute to the secure-build-cli project.
