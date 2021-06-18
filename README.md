@@ -142,7 +142,7 @@ ibmcloud plugin install hpvs
          cd ~/git/secure-build-cli
          ```
       2. Add the following path names to the  `sbs-config.json` file.
-         Note:- The `server-csr.pem` and `server-cert.pem` do not exist as yet. If the `./sbs-keys` dir doesn’t exist, you can create one by using the command `mkdir ./sbs-keys`.
+         Note:- The `server-csr.pem` and `server-cert.pem` do not exist as yet. If the `./sbs-keys` directory doesn’t exist, you can create one by using the command `mkdir ./sbs-keys`.
          ```
          "CAPATH": "Path to CA certificate",
          "CAKEYPATH": "Path to CA key",
