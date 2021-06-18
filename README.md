@@ -124,8 +124,8 @@ ibmcloud plugin install hpvs
 
 2. Log in to IBM Cloud by using either an API key, or the Single Sign On (SSO) authentication. See [Getting started with the IBM Cloud CLI](https://cloud.ibm.com/docs/cli?topic=cli-getting-started) for more details.
 
-3. Complete the following steps.
-   1. Create certificate-authority (CA) and client certificates which are used for secure communication from your client script to the SBS instance.
+3. Configure the `sbs-config.json` file with client certificates using one of the following options.
+   1. Use build.py to create certificate-authority (CA) and client certificates which are used for secure communication from your client script to the SBS instance.
       ```buildoutcfg
       ./build.py create-client-cert --env sbs-config.json
       ```
@@ -136,13 +136,13 @@ ibmcloud plugin install hpvs
       Note:-    
       - Follow the best practices of certificate management.
       - The CA certificate should not be compromised or revoked.
-   2. To use the user generated CA and client certificates, complete the following steps.
-      1. Run the following command:
+   2. Use your own certificate-authority (CA) and client certificates.
+      1. Go to the CLI directory. If it is located at `~/git`, run the following command:
          ```
          cd ~/git/secure-build-cli
          ```
-      2. Create the `sbs-config.json` file to include the path names of the generated certificates.
-         Note:- The `server-csr.pem` and `server-cert.pem` do not exist as yet.
+      2. Add the following path names to the  `sbs-config.json` file.
+         Note:- The `server-csr.pem` and `server-cert.pem` do not exist as yet. If the `./sbs-keys` dir doesn’t exist, you can create one by using the command `mkdir ./sbs-keys`.
          ```
          "CAPATH": "Path to CA certificate",
          "CAKEYPATH": "Path to CA key",
@@ -155,12 +155,12 @@ ibmcloud plugin install hpvs
          CERT_ENV=`./build.py instance-env --env sbs-config.json`
          ```
       3. Create a the Hyper Protect Virtual Servers instance by using the `ibmcloud hpvs instance-create command`.  
-          ```
-          ibmcloud hpvs instance-create docker.io-ibmzcontainers-acrux-dev1 lite-s syd05 --rd-path secure_build.asc --image-tag 1.3.0 $CERT_ENV
-          ```
-          Continue to step #6.          
-          Note:-     
-         - Follow the best practices of certificate management. 
+         ```
+         ibmcloud hpvs instance-create docker.io-ibmzcontainers-acrux-dev1 lite-s syd05 --rd-path secure_build.asc --image-tag 1.3.0 $CERT_ENV
+         ```
+         Continue to step #6.            
+         Note:-       
+         - Follow the best practices of certificate management.
          - The CA certificate should not be compromised or revoked.
 4. Copy your CA and client certificates under directory `.SBContainer-9ab033ad-5da1-4c4e-8eae-ca8c468dbbcc.d` to file `client_base64` and `ca_base64` in a base64 format respectively.
 ```buildoutcfg
