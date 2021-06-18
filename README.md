@@ -133,7 +133,7 @@ ibmcloud plugin install hpvs
       You can notice that two parameters "UUID" and "SECRET", are added to the `sbs-config.json` file.
       UUID is used along with the container name where the generated certificates are stored.
       SECRET holds a randomly generated value, which needs to be preserved safely, used to deal with a state image of SBS. Continue to step #4.  
-      Note:-    
+      Note:-      
       - Follow the best practices of certificate management.
       - The CA certificate should not be compromised or revoked.
    2. Use your own certificate-authority (CA) and client certificates.
@@ -142,7 +142,7 @@ ibmcloud plugin install hpvs
          cd ~/git/secure-build-cli
          ```
       2. Add the following path names to the  `sbs-config.json` file.
-         Note:- The `server-csr.pem` and `server-cert.pem` do not exist as yet. If the `./sbs-keys` directory doesn’t exist, you can create one by using the command `mkdir ./sbs-keys`.
+         Note that the `server-csr.pem` and `server-cert.pem` do not exist as yet. If the `./sbs-keys` directory doesn’t exist, you can create one by using the command `mkdir ./sbs-keys`.
          ```
          "CAPATH": "Path to CA certificate",
          "CAKEYPATH": "Path to CA key",
@@ -154,7 +154,7 @@ ibmcloud plugin install hpvs
          ```
          CERT_ENV=`./build.py instance-env --env sbs-config.json`
          ```
-      3. Create a the Hyper Protect Virtual Servers instance by using the `ibmcloud hpvs instance-create command`.  
+      3. Create a the Hyper Protect Virtual Servers instance by using the `ibmcloud hpvs instance-create` command.  
          ```
          ibmcloud hpvs instance-create docker.io-ibmzcontainers-acrux-dev1 lite-s syd05 --rd-path secure_build.asc --image-tag 1.3.0.1 $CERT_ENV
          ```
