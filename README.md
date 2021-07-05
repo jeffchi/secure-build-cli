@@ -328,7 +328,7 @@ ibmcloud hpvs instance-create container_name lite-s dal13 --rd-path sbs.enc -i i
 ```
 
 ## Manifest file
-The SBS instance creates a manifest file at each successful build as a snapshot of build materials for audit purposes. The developer can verify the integrity of the built image and the artifacts used for building the image. Using this Manifest is optional. 
+The SBS instance creates a manifest file at each successful build as a snapshot of build materials for audit purposes. The developer can verify the integrity of the built image and the artifacts used for building the image. Using this Manifest file is optional. 
 
 ## How to store Manifest file in IBM Cloud Object Storage
 
