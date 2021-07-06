@@ -45,7 +45,7 @@ pip3 install -r requirements.txt
 ```
 
 ## Preparing the configuration
-Create the `sbs-config.json` file in any location you choose, and add the following content in the file:
+Create the `sbs-config.json` file in any location you choose on your local machine, and add the following content in the file:
 ```
 {
   "CICD_PUBLIC_IP": "",
@@ -80,7 +80,7 @@ IMAGE_TAG - image tag of the container image to be deployed as SBS server. Use "
 GITHUB_KEY_FILE - Private key path to access your GitHub repo.
 GITHUB_URL - GitHub URL.
 GITHUB_BRANCH - GitHub branch name.
-CONTAINER_NAME - Name of the Hyper Protect Virtual Servers instance which you want to create on cloud. This name can be different than the name which you use on cloud. You can choose any name for the container.
+CONTAINER_NAME - Name of the Hyper Protect Virtual Servers instance which you want to create on cloud. This name can be different from the name which you use on cloud. The name is used as a part of a certificate file name. You can choose any valid string as a file name. 
 REPO_ID - This is the ID which is used as a prefix of the registration definition file for a newly built image.
 DOCKER_REPO - DockerHub repository.
 DOCKER_USER - docker user name who has write access to above repository.
@@ -328,7 +328,7 @@ ibmcloud hpvs instance-create container_name lite-s dal13 --rd-path sbs.enc -i i
 ```
 
 ## Manifest file
-The SBS instance creates a manifest file at each successful build as a snapshot of build materials for audit purposes. The developer can verify the integrity of the built image and the artifacts used for building the image. Using this Manifest file is optional. 
+The SBS instance creates a manifest file at each successful build as a snapshot of build materials for audit purposes. The developer can verify the integrity of the built image and the artifacts used for building the image. Using this Manifest file is optional.
 
 ## How to store Manifest file in IBM Cloud Object Storage
 
