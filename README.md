@@ -45,7 +45,7 @@ pip3 install -r requirements.txt
 ```
 
 ## Preparing the configuration
-Create the `sbs-config.json` file and add the following content in the file:
+Create the `sbs-config.json` file in any location you choose on your local machine, and add the following content in the file:
 ```
 {
   "CICD_PUBLIC_IP": "",
@@ -80,7 +80,7 @@ IMAGE_TAG - image tag of the container image to be deployed as SBS server. Use "
 GITHUB_KEY_FILE - Private key path to access your GitHub repo.
 GITHUB_URL - GitHub URL.
 GITHUB_BRANCH - GitHub branch name.
-CONTAINER_NAME - Name of the Hyper Protect Virtual Servers instance which you want to create on cloud. This name can be different than the name which you use on cloud.
+CONTAINER_NAME - Name of the Hyper Protect Virtual Servers instance which you want to create on cloud. This name can be different from the name which you use on cloud. The name is used as a part of a certificate file name. You can choose any valid string as a file name. 
 REPO_ID - This is the ID which is used as a prefix of the registration definition file for a newly built image.
 DOCKER_REPO - DockerHub repository.
 DOCKER_USER - docker user name who has write access to above repository.
@@ -127,7 +127,7 @@ ibmcloud plugin install hpvs
 3. Configure the `sbs-config.json` file with client certificates using one of the following options.
    1. Use build.py to create certificate-authority (CA) and client certificates which are used for secure communication from your client script to the SBS instance.
       ```buildoutcfg
-      ./build.py create-client-cert --env sbs-config.json
+      ./build.py create-client-cert --env <path>/sbs-config.json
       ```
       After you execute above command, a directory is generated that looks like this: `.SBContainer-9ab033ad-5da1-4c4e-8eae-ca8c468dbbcc.d`.
       You can notice that two parameters "UUID" and "SECRET", are added to the `sbs-config.json` file.
@@ -152,7 +152,7 @@ ibmcloud plugin install hpvs
          ```
          To get the base64-encoded certificates into CERT_ENV using build.py, run the following command:
          ```
-         CERT_ENV=`./build.py instance-env --env sbs-config.json`
+         CERT_ENV=`./build.py instance-env --env <path>/sbs-config.json`
          ```
       3. Create a the Hyper Protect Virtual Servers instance by using the `ibmcloud hpvs instance-create` command.  
          ```
@@ -169,7 +169,7 @@ echo $(cat .SBContainer-9ab033ad-5da1-4c4e-8eae-ca8c468dbbcc.d/client-ca.pem | b
 ```
 Alternatively, you can get base64-encoded certificates by running the following command.
 ```buildoutcfg
-./build.py instance-env --env sbs-config.json
+./build.py instance-env --env <path>/sbs-config.json
 ```
 
 5. Create the SBS instance on cloud.
@@ -206,7 +206,7 @@ After you create the SBS instance, complete the following steps to build your im
 
 1. Check the status of SBS.
 ```buildoutcfg
-./build.py status --env sbs-config.json --noverify
+./build.py status --env <path>/sbs-config.json --noverify
 ```
 Before initializing SBS, it returns an empty string as status.
 ```
@@ -217,19 +217,19 @@ INFO:__main__:status: response={
 
 2. Get a server certificate-signing-request (CSR) to sign with your CA.
 ```buildoutcfg
-./build.py get-server-csr --env sbs-config.json --noverify
+./build.py get-server-csr --env <path>/sbs-config.json --noverify
 ```
 3. Sign the server CSR.
 ```buildoutcfg
-./build.py sign-csr --env sbs-config.json
+./build.py sign-csr --env <path>/sbs-config.json
 ```
 4. Post the signed server certificate to SBS.
 ```buildoutcfg
-./build.py post-server-cert --env sbs-config.json --noverify
+./build.py post-server-cert --env <path>/sbs-config.json --noverify
 ```
 5. Now again check the status without `noverify` option.
 ```buildoutcfg
-./build.py status --env sbs-config.json
+./build.py status --env <path>/sbs-config.json
 ```
 The `post-server-cert` command lets SBS to install the signed certificate and
 to restart the nginx server to make it effective.
@@ -242,19 +242,19 @@ INFO:__main__:status: response={
 ```
 6. Initialize the configuration.
 ```buildoutcfg
-./build.py init --env sbs-config.json
+./build.py init --env <path>/sbs-config.json
 ```
 7. Build the image.
 ```buildoutcfg
-./build.py build --env sbs-config.json
+./build.py build --env <path>/sbs-config.json
 ```
 8. Check the build log.
 ```buildoutcfg
-./build.py log --log build --env sbs-config.json
+./build.py log --log build --env <path>/sbs-config.json
 ```
 9. Check the status if the image has been built and pushed successfully.
 ```buildoutcfg
-./build.py status --env sbs-config.json
+./build.py status --env <path>/sbs-config.json
 ```
 As the build process makes a progress, the `status` response shows the last completed step.
 Here is a typical sequence of responses for a successful build.
@@ -295,7 +295,7 @@ Complete the following steps:
 
 1. Get an encrypted registration definition file.
 ```buildoutcfg
-./build.py get-config-json --env sbs-config.json --key-id <key_id> --email <your_email_as_id>
+./build.py get-config-json --env <path>/sbs-config.json --key-id <key_id> --email <your_email_as_id>
 ```
 e.g. `--key-id isv_user --email isv@example.com`
 
@@ -311,7 +311,7 @@ Now the registration definition file for the newly built image, `sbs.enc`, is st
 
 a. Run the following command to see the image tag after building the image.
 ```buildoutcfg
-# ./build.py status --env sbs-config.json
+# ./build.py status --env <path>/sbs-config.json
 INFO:__main__:status: response={
  ..........
     "image_tag": "s390x-v0.3-60fd72e",
@@ -328,7 +328,7 @@ ibmcloud hpvs instance-create container_name lite-s dal13 --rd-path sbs.enc -i i
 ```
 
 ## Manifest file
-The SBS instance creates a manifest file at each successful build as a snapshot of build materials for audit purposes. The developer can verify the integrity of the built image and the artifacts used for building the image.
+The SBS instance creates a manifest file at each successful build as a snapshot of build materials for audit purposes. The developer can verify the integrity of the built image and the artifacts used for building the image. Using this Manifest file is optional.
 
 ## How to store Manifest file in IBM Cloud Object Storage
 
@@ -345,12 +345,12 @@ You need to create the bucket specified by `MANIFEST_BUCKET_NAME` if it doesn't 
 
 2. Update the SBS instance with the new COS parameters.
 ```buildoutcfg
-./build.py update --env sbs-config.json
+./build.py update --env <path>/sbs-config.json
 ```
 
 3. Build the image.
 ```buildoutcfg
-./build.py build --env sbs-config.json
+./build.py build --env <path>/sbs-config.json
 ```
 
 This will store your manifest file to IBM Cloud Object Storage.
@@ -360,14 +360,14 @@ This will store your manifest file to IBM Cloud Object Storage.
 
 1. Get the latest manifest file directly from SBS.
 ```buildoutcfg
-./build.py get-manifest --env sbs-config.json
+./build.py get-manifest --env <path>/sbs-config.json
 ```
 
 This will store your manifest file to current working directory, something similar to `manifest.docker.io.abhiramk.nginxapp.v1-d14cdc8.2021-02-04_13-25-52.512466.sig.tbz`.
 
 2. Verifying the integrity of the Manifest file
 ```buildoutcfg
-./build.py get-manifest --env sbs-config.json  --verify-manifest
+./build.py get-manifest --env <path>/sbs-config.json  --verify-manifest
 ```
 
 ## How to extract build materials from the Manifest file
@@ -398,7 +398,7 @@ You need it to recover the signing key and additional SBS internal states to bui
 ## How to get the state image
 1. Get the state image locally.
 ```buildoutcfg
-./build.py get-state-image --env sbs-config.json
+./build.py get-state-image --env <path>/sbs-config.json
 ```
 There will be an encrypted file which will be downloaded in your current directory, similar to this:
 ```buildoutcfg
@@ -424,13 +424,13 @@ docker.io.prabhat54331.sbs22.s390x-v0.1-60fd72e.2020-10-21_07-20-08.516797
     3) Update the configuration.
 
       ```buildoutcfg
-      ./build.py update --env sbs-config.json
+      ./build.py update --env <path>/sbs-config.json
       ```
 
     4) Save the state image to COS.
 
       ```buildoutcfg
-      ./build.py get-state-image --env sbs-config.json {--state-bucket-name <your_bucket_name>}
+      ./build.py get-state-image --env <path>/sbs-config.json {--state-bucket-name <your_bucket_name>}
       ```
 
       Use the `--state-bucket-name` option, if you want to override the parameter in `sbs-config.json` or you don't have one in the file.
@@ -443,45 +443,45 @@ Complete the following steps:
 
 2. Check the status of SBS.
 ```buildoutcfg
-./build.py status --env sbs-config.json --noverify
+./build.py status --env <path>/sbs-config.json --noverify
 ```
 3. Get a server CSR to sign with your CA
 ```buildoutcfg
-./build.py get-server-csr --env sbs-config.json --noverify
+./build.py get-server-csr --env <path>/sbs-config.json --noverify
 ```
 4. Sign the server CSR.
 ```buildoutcfg
-./build.py sign-csr --env sbs-config.json
+./build.py sign-csr --env <path>/sbs-config.json
 ```
 5. Post the signed server certificate to SBS.
 ```buildoutcfg
-./build.py post-server-cert --env sbs-config.json --noverify
+./build.py post-server-cert --env <path>/sbs-config.json --noverify
 ```
 6. Now again check the status.
 ```buildoutcfg
-./build.py status --env sbs-config.json
+./build.py status --env <path>/sbs-config.json
 ```
 7. Post the state image.
 ```buildoutcfg
-./build.py post-state-image --state-image docker.io.prabhat54331.sbs22.s390x-v0.1-60fd72e.2020-10-21_07-20-08.516797 --env sbs-config.json
+./build.py post-state-image --state-image docker.io.prabhat54331.sbs22.s390x-v0.1-60fd72e.2020-10-21_07-20-08.516797 --env <path>/sbs-config.json
 ```
 Use the `--state-image` option to specify the state image file you downloaded previously with the `get-state-image` command.
 
 8. Update the configuration.
 ```buildoutcfg
-./build.py update --env sbs-config.json
+./build.py update --env <path>/sbs-config.json
 ```
 9. Now you can further build your image using build command. Eventually your Docker image will be pushed to same registry.
 ```buildoutcfg
-./build.py build --env sbs-config.json
+./build.py build --env <path>/sbs-config.json
 ```
 10. Check the build log and wait until the build operation is completed
 ```buildoutcfg
-./build.py log --log build --env sbs-config.json
+./build.py log --log build --env <path>/sbs-config.json
 ```
 11. Check the status of the container
 ```buildoutcfg
-./build.py status --env sbs-config.json
+./build.py status --env <path>/sbs-config.json
 ```
 
 ## How to recover state image from Cloud Object Storage
@@ -491,58 +491,58 @@ Complete the following steps:
 
 2. Check the status of SBS.
 ```buildoutcfg
-./build.py status --env sbs-config.json --noverify
+./build.py status --env <path>/sbs-config.json --noverify
 ```
 
 3. Get a server CSR to sign with your CA.
 ```buildoutcfg
-./build.py get-server-csr --env sbs-config.json --noverify
+./build.py get-server-csr --env <path>/sbs-config.json --noverify
 ```
 
 4. Sign the server CSR.
 ```buildoutcfg
-./build.py sign-csr --env sbs-config.json
+./build.py sign-csr --env <path>/sbs-config.json
 ```
 
 5. Post the signed server certificate to SBS.
 ```buildoutcfg
-./build.py post-server-cert --env sbs-config.json --noverify
+./build.py post-server-cert --env <path>/sbs-config.json --noverify
 ```
 
 6. Now again check the status.
 ```buildoutcfg
-./build.py status --env sbs-config.json
+./build.py status --env <path>/sbs-config.json
 ```
 
 7. Use the same `sbs-config.json` file. Ensure that you have changed the parameter `CICD_PUBLIC_IP` with the newly created IP address of your SBS server.
 
 8. Initialize the configuration.
 ```buildoutcfg
-./build.py init --env sbs-config.json
+./build.py init --env <path>/sbs-config.json
 ```
 
 9. Post the state image.
 ```buildoutcfg
-./build.py post-state-image --env sbs-config.json --name docker.io.prabhat54331.sbs22.s390x-v0.1-60fd72e.2020-10-21_07-20-08.516797 {--state-bucket-name <your_bucket_name>}
+./build.py post-state-image --env <path>/sbs-config.json --name docker.io.prabhat54331.sbs22.s390x-v0.1-60fd72e.2020-10-21_07-20-08.516797 {--state-bucket-name <your_bucket_name>}
 ```
 Use the `--state-bucket-name` option, if you want to override the parameter in `sbs-config.json` or you don't have one in the file.
 Use the `--name` option to specifiy the name of the state image on COS, which is the same as the name of the meta data file you downloaded with the `get-state-image` command.
 
 10. Update the configuration.
 ```buildoutcfg
-./build.py update --env sbs-config.json
+./build.py update --env <path>/sbs-config.json
 ```
 11. You can build your image using build command. Eventually your Docker image will be pushed to same registry.
 ```buildoutcfg
-./build.py build --env sbs-config.json
+./build.py build --env <path>/sbs-config.json
 ```
 12. Check the build log and wait until the build operation is completed.
 ```buildoutcfg
-./build.py log --log build --env sbs-config.json
+./build.py log --log build --env <path>/sbs-config.json
 ```
 13. Check the status of SBS.
 ```buildoutcfg
-./build.py status --env sbs-config.json
+./build.py status --env <path>/sbs-config.json
 ```
 
 ## How to stop and clean up a build process
@@ -552,17 +552,17 @@ the on-going build first.
 
 1. You can always check the status of SBS using the `status` command.
 ```buildoutcfg
-./build.py status --env sbs-config.json
+./build.py status --env <path>/sbs-config.json
 ```
 
 2. Clean up SBS if you want to run another build without waiting for an on-going build to complete.
 ```buildoutcfg
-./build.py clean --env sbs-config.json
+./build.py clean --env <path>/sbs-config.json
 ```
 
 3. Check the status again.
 ```buildoutcfg
-./build.py status --env sbs-config.json
+./build.py status --env <path>/sbs-config.json
 ```
 After the `clean` command completes successfully, the `status` command should return `restarted cicd`. This indicates the build service (cicd)
 has been restarted and is ready to accept a new `build` command.
@@ -578,7 +578,7 @@ Complete the following steps:
 
 1. You can always update the secret to a new one in the `sbs-config.json` file. To update the secret, run the following command.
 ```buildoutcfg
-./build.py update --env sbs-config.json --new-secret
+./build.py update --env <path>/sbs-config.json --new-secret
 ```
 `SECRET` will be updated with a randomly generated base64 value in the `sbs-config.json` file if the update operation is successful.
 
