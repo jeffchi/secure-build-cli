@@ -80,7 +80,7 @@ IMAGE_TAG - image tag of the container image to be deployed as SBS server. Use "
 GITHUB_KEY_FILE - Private key path to access your GitHub repo.
 GITHUB_URL - GitHub URL.
 GITHUB_BRANCH - GitHub branch name.
-CONTAINER_NAME - Name of the Hyper Protect Virtual Servers instance which you want to create on cloud. This name can be different from the name which you use on cloud. The name is used as a part of a certificate file name. You can choose any valid string as a file name. 
+CONTAINER_NAME - Name of the Hyper Protect Virtual Servers instance which you want to create on cloud. This name can be different from the name which you use on cloud. The name is used as a part of a certificate file name. You can choose any valid string as a file name.
 REPO_ID - This is the ID which is used as a prefix of the registration definition file for a newly built image.
 DOCKER_REPO - DockerHub repository.
 DOCKER_USER - docker user name who has write access to above repository.
@@ -136,6 +136,7 @@ ibmcloud plugin install hpvs
       Note:-      
       - Follow the best practices of certificate management.
       - The CA certificate should not be compromised or revoked.
+      - Third-party certificates are not supported.
    2. Use your own certificate-authority (CA) and client certificates.
       1. Go to the CLI directory. If it is located at `~/git`, run the following command:
          ```
@@ -162,6 +163,7 @@ ibmcloud plugin install hpvs
          Note:-       
          - Follow the best practices of certificate management.
          - The CA certificate should not be compromised or revoked.
+         - Third-party certificates are not supported.
 4. Copy your CA and client certificates under directory `.SBContainer-9ab033ad-5da1-4c4e-8eae-ca8c468dbbcc.d` to file `client_base64` and `ca_base64` in a base64 format respectively.
 ```buildoutcfg
 echo $(cat .SBContainer-9ab033ad-5da1-4c4e-8eae-ca8c468dbbcc.d/client-cert.pem | base64) | tr -d ' ' > client_base64
