@@ -103,7 +103,7 @@ Note: - If you use IBM Cloud Registry instead of DockerHub registry, then you mu
 "DOCKER_PASSWORD": "<ibm_cloud_apikey>"
 "DOCKER_RO_USER": "iamapikey",
 "DOCKER_RO_PASSWORD": "<ibm_cloud_apikey>",
-"DOCKER_CONTENT_TRUST_PUSH_SERVER": "https://<domain_name>"
+"DOCKER_CONTENT_TRUST_PUSH_SERVER": "https://<domain_name>:4443"
 ```
 The `<domain_name>` specifies the location of IBM Cloud Container Registry (e.g. `us.icr.io`). Select the domain name for one of [avilable regions](https://cloud.ibm.com/docs/Registry?topic=Registry-registry_overview#registry_regions).
 
