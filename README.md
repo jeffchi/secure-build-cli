@@ -586,6 +586,23 @@ Complete the following steps:
 
 Note: After the secret is updated, you cannot use a state image obtained using the previous one. Consider obtaining a state image again with the new secret.
 
+## Updating the Secure Build Server instance to the latest image
+
+When you want to update the Secure Build Server instance from an earlier image to the latest image (for example, from 1.3.0.1 to 1.3.0.2), you must re-run the following commands:
+
+1. Get a server certificate-signing-request (CSR) to sign with your CA.
+```buildoutcfg
+./build.py get-server-csr --env <path>/sbs-config.json --noverify
+```
+2. Sign the server CSR.
+```buildoutcfg
+./build.py sign-csr --env <path>/sbs-config.json
+```
+3. Post the signed server certificate to SBS.
+```buildoutcfg
+./build.py post-server-cert --env <path>/sbs-config.json --noverify
+```
+
 ## License
 
 [Apache 2.0](https://github.com/ibm-hyper-protect/secure-build-cli/blob/main/LICENSE)
