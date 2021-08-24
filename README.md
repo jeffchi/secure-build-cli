@@ -103,7 +103,7 @@ Note: - If you use IBM Cloud Registry instead of DockerHub registry, then you mu
 "DOCKER_PASSWORD": "<ibm_cloud_apikey>"
 "DOCKER_RO_USER": "iamapikey",
 "DOCKER_RO_PASSWORD": "<ibm_cloud_apikey>",
-"DOCKER_CONTENT_TRUST_PUSH_SERVER": "https://<domain_name>:4443",
+"DOCKER_CONTENT_TRUST_PUSH_SERVER": "https://<domain_name>"
 ```
 The `<domain_name>` specifies the location of IBM Cloud Container Registry (e.g. `us.icr.io`). Select the domain name for one of [avilable regions](https://cloud.ibm.com/docs/Registry?topic=Registry-registry_overview#registry_regions).
 
@@ -588,17 +588,29 @@ Note: After the secret is updated, you cannot use a state image obtained using t
 
 ## Updating the Secure Build Server instance to the latest image
 
-When you want to update the Secure Build Server instance from an earlier image to the latest image (for example, from 1.3.0.1 to 1.3.0.2), you must re-run the following commands:
+When you want to update the Secure Build Server instance from an earlier image to the latest image (for example, from 1.3.0.1 to 1.3.0.2), you must run the following commands:
 
-1. Get a server certificate-signing-request (CSR) to sign with your CA.
+1. Get base64-encoded certificates.
+```buildoutcfg
+./build.py instance-env --env sbs-config.json ca=$(cat ca_base64) client=$(cat client_base64)
+```  
+
+2. Update the existing SBS instance on IBM Cloud.
+```buildoutcfg
+ibmcloud hpvs instance-update SBContainer --rd-path secure_build.asc -i 1.3.0.2 -e CLIENT_CRT=$client -e CLIENT_CA=$ca
+```
+
+3. Get a server certificate-signing-request (CSR) to sign with your CA.
 ```buildoutcfg
 ./build.py get-server-csr --env <path>/sbs-config.json --noverify
 ```
-2. Sign the server CSR.
+
+4. Sign the server CSR.
 ```buildoutcfg
 ./build.py sign-csr --env <path>/sbs-config.json
 ```
-3. Post the signed server certificate to SBS.
+
+5. Post the signed server certificate to SBS.
 ```buildoutcfg
 ./build.py post-server-cert --env <path>/sbs-config.json --noverify
 ```
