@@ -64,6 +64,8 @@ Create the `sbs-config.json` file in any location you choose on your local machi
   "DOCKER_CONTENT_TRUST_BASE_SERVER": "",
   "DOCKER_RO_USER": "<docker_user>",
   "DOCKER_RO_PASSWORD": "<docker_password>",
+  "DOCKER_BASE_USER": "",
+  "DOCKER_BASE_PASSWORD": "",
   "ENV_WHITELIST":  ["<KEY1>", "<KEY2>"],
   "ARG": {
     "<BUILD_ARG1>": "<VALUE1>",
@@ -85,6 +87,8 @@ REPO_ID - This is the ID which is used as a prefix of the registration definitio
 DOCKER_REPO - DockerHub repository.
 DOCKER_USER - docker user name who has write access to above repository.
 DOCKER_PASSWORD - docker password who has write access to above repository.
+DOCKER_BASE_USER - docker user name of repository which has base image.
+DOCKER_BASE_PASSWORD - docker password of repository which has base image.
 IMAGE_TAG_PREFIX - a prefix of the image tag for the image to be built. The full image tag will be IMAGE_TAG_PREFIX + '-' + the leading seven digits from the GitHub repository hash.
 DOCKER_CONTENT_TRUST_BASE - If your base image that is mentioned in the Dockerfile is signed, then make it true.
 DOCKER_CONTENT_TRUST_BASE_SERVER - If your base image mentioned in the Dockerfile is signed, then you can specify the notary URL (default: https://notary.docker.io).
