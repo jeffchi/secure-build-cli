@@ -2,7 +2,7 @@
 
 IBM Cloud Hyper Protect Virtual Servers Secure Build Server, also referred to as Secure Build Server (SBS) allows you to build a trusted container image within a secure enclave, provided by [IBM Cloud Hyper Protect Virtual Servers](https://cloud.ibm.com/catalog/services/hyper-protect-virtual-server). The enclave is highly isolated - developers can access the container only by using a specific API and the cloud administrator cannot access the contents of the container as well, thereby the created image can be highly trusted. Specifically, the build server cryptographically signs the image, and a manifest (which is a collection of materials used during the build for audit purposes). Since the enclave protects signing keys inside the enclave, the signatures can be used to verify whether the image and manifest are from the build server, and not somewhere else.
 
-The following diagram illustrates a high level structure of SBS, which is provisioned by an administrator by using the [IBM Cloud CLI](https://cloud.ibm.com/docs/cli?topic=hpvs-cli-plugin-hpvs_cli_plugin). This document describes how a developer can interact with the server by using the `build.py` script. A developer prepares the source code of an application with Dockerfile, in a source code repository such as GitHub. The build server pulls the source code, builds a container image by using the Dockerfile, signs it, and and pushes the container image to the IBM Container Registry or Docker Hub. During the build process, it also creates a manifest file and signs it. Optionally, it can
+The following diagram illustrates a high level structure of SBS, which is provisioned by an administrator by using the [IBM Cloud CLI](https://cloud.ibm.com/docs/cli?topic=hpvs-cli-plugin-hpvs_cli_plugin). This document describes how a developer can interact with the server by using the `build.py` script. A developer prepares the source code of an application with Dockerfile, in a source code repository such as GitHub. The build server pulls the source code, builds a container image by using the Dockerfile, signs it, and pushes it to a container registry, such as Docker Hub. During the build process, it also creates a manifest file and signs it. Optionally, it can
 push the manifest to Cloud Object Storage, or the developer can download it on a local file system. The build server can also export and import its state as a single file, which includes signing keys of the image and manifest, with build parameters. When exported, the state is encrypted in such a way that the developer or IBM cannot decrypt the state image outside the enclave. It can be decrypted only inside the enclave. The encrypted state image can be pushed to Cloud Object Storage, or the developer can download it on a local file system.
 
 <p align="center">
@@ -78,7 +78,7 @@ Where
 ```
 CICD_PUBLIC_IP - IP address of the SBS server. Leave it as "" since it is unknown until the server is provisioned.
 CICD_PORT - port on which a build service is running (default: 443).
-IMAGE_TAG - image tag of the container image to be deployed as SBS server. Use "1.3.0.2" unless otherwise noted.
+IMAGE_TAG - image tag of the container image to be deployed as SBS server. Use "1.3.0.3" unless otherwise noted.
 GITHUB_KEY_FILE - Private key path to access your GitHub repo.
 GITHUB_URL - GitHub URL.
 GITHUB_BRANCH - GitHub branch name.
@@ -87,11 +87,11 @@ REPO_ID - This is the ID which is used as a prefix of the registration definitio
 DOCKER_REPO - DockerHub repository.
 DOCKER_USER - docker user name who has write access to above repository.
 DOCKER_PASSWORD - docker password who has write access to above repository.
-DOCKER_BASE_USER - docker user name of repository which has base image.
-DOCKER_BASE_PASSWORD - docker password of repository which has base image.
 IMAGE_TAG_PREFIX - a prefix of the image tag for the image to be built. The full image tag will be IMAGE_TAG_PREFIX + '-' + the leading seven digits from the GitHub repository hash.
 DOCKER_CONTENT_TRUST_BASE - If your base image that is mentioned in the Dockerfile is signed, then make it true.
 DOCKER_CONTENT_TRUST_BASE_SERVER - If your base image mentioned in the Dockerfile is signed, then you can specify the notary URL (default: https://notary.docker.io).
+DOCKER_BASE_USER - docker user name of repository which has base image.
+DOCKER_BASE_PASSWORD - docker password of repository which has base image.
 DOCKER_RO_USER - you can use the same as DOCKER_USER. It is recommended that you specify a user who has read access only to your Docker repository.
 DOCKER_RO_PASSWORD - you can use same as DOCKER_PASSWORD. It is recommended that you specify a user who has read access only to your Docker repository.
 ENV_WHITELIST - All environment variable names need to be listed. The Hyper Protect Virtual Servers don't allow any environment variable unless it is in this list because of a security reason.
@@ -107,10 +107,13 @@ Note: - If you use IBM Cloud Registry instead of DockerHub registry, then you mu
 "DOCKER_PASSWORD": "<ibm_cloud_apikey>"
 "DOCKER_RO_USER": "iamapikey",
 "DOCKER_RO_PASSWORD": "<ibm_cloud_apikey>",
-"DOCKER_CONTENT_TRUST_PUSH_SERVER": "https://<domain_name>:4443"
+"DOCKER_CONTENT_TRUST_PUSH_SERVER": "https://<domain_name>"
 ```
-The `<domain_name>` specifies the location of IBM Cloud Container Registry (e.g. `us.icr.io`). Select the domain name for one of [avilable regions](https://cloud.ibm.com/docs/Registry?topic=Registry-registry_overview#registry_regions).
 
+**Note:**
+The `<domain_name>` specifies the location of IBM Cloud Container Registry (e.g. `us.icr.io`). Select the domain name for one of [avilable regions](https://cloud.ibm.com/docs/Registry?topic=Registry-registry_overview#registry_regions).
+If you are using the IBM Cloud Registry notary server, and you specified the `<domain_name>` as `us.icr.io`, then specify `https://notary.us.icr.io` as the value for `DOCKER_CONTENT_TRUST_PUSH_SERVER`.
+As another example, if value of `DOCKER_REPO=de.icr.io`, then the value of `DOCKER_CONTENT_TRUST_PUSH_SERVER` would be `https://notary.de.icr.io`
 To know more about IBM Cloud registry, see [Getting started with IBM Cloud Container Registry](https://cloud.ibm.com/docs/Registry?topic=Registry-getting-started).
 
 Also see [Additional Build Parameters](additional-build-parameters.md).
@@ -121,7 +124,7 @@ Complete the following steps:
 
 1. Install the IBM Cloud CLI, and the HPVS plugin.
 ```buildoutcfg
-curl -sL https://ibm.biz/idt-installer | bash
+curl -sL https://raw.githubusercontent.com/IBM-Cloud/ibm-cloud-developer-tools/master/linux-installer/idt-installer | bash
 ibmcloud plugin install container-registry -r Bluemix -f
 ibmcloud plugin install hpvs
 ```
@@ -161,7 +164,7 @@ ibmcloud plugin install hpvs
          ```
       3. Create a the Hyper Protect Virtual Servers instance by using the `ibmcloud hpvs instance-create` command.  
          ```
-         ibmcloud hpvs instance-create docker.io-ibmzcontainers-acrux-dev1 lite-s syd05 --rd-path secure_build.asc --image-tag 1.3.0.2 $CERT_ENV
+         ibmcloud hpvs instance-create docker.io-ibmzcontainers-acrux-dev1 lite-s syd05 --rd-path secure_build.asc --image-tag 1.3.0.3 $CERT_ENV
          ```
          Continue to step #6.            
          Note:-       
@@ -182,17 +185,17 @@ Alternatively, you can get base64-encoded certificates by running the following 
 ```buildoutcfg
 ca=$(cat ca_base64)
 client=$(cat client_base64)
-ibmcloud hpvs instance-create SBContainer lite-s dal13 --rd-path secure_build.asc -i 1.3.0.2 -e CLIENT_CRT=$client -e CLIENT_CA=$ca
+ibmcloud hpvs instance-create SBContainer lite-s dal13 --rd-path secure_build.asc -i 1.3.0.3 -e CLIENT_CRT=$client -e CLIENT_CA=$ca
 ```
 Alternatively, you can copy & paste the output from `instance-env` command as command-line parameters for the `instance-create` command.
 ```buildoutcfg
-ibmcloud hpvs instance-create SBContainer lite-s dal13 --rd-path secure_build.asc -i 1.3.0.2 -e CLIENT_CRT=... -e CLIENT_CA=...
+ibmcloud hpvs instance-create SBContainer lite-s dal13 --rd-path secure_build.asc -i 1.3.0.3 -e CLIENT_CRT=... -e CLIENT_CA=...
 ```
 Where:  
 - SBContainer is the name of the SBS instance to be created.      
 - lite-s is the plan name.  
 - dal13 is the region name.  
-- 1.3.0.2 is the image tag of Secure Docker Build docker image.
+- 1.3.0.3 is the image tag of Secure Docker Build docker image.
 
 To know more details about which plan to use and which region to use, see [hpvs instance-create](https://cloud.ibm.com/docs/hpvs-cli-plugin?topic=hpvs-cli-plugin-hpvs_cli_plugin#create_instance).
 
@@ -592,16 +595,22 @@ Note: After the secret is updated, you cannot use a state image obtained using t
 
 ## Updating the Secure Build Server instance to the latest image
 
-When you want to update the Secure Build Server instance from an earlier image to the latest image (for example, from 1.3.0.1 to 1.3.0.2), you must run the following commands:
+When you want to update the Secure Build Server instance from an earlier image to the latest image (for example, from 1.3.0.2 to 1.3.0.3), you must run the following commands:
 
 1. Get base64-encoded certificates.
 ```buildoutcfg
-./build.py instance-env --env sbs-config.json ca=$(cat ca_base64) client=$(cat client_base64)
-```  
+./build.py instance-env --env sbs-config.json 
+ ```  
+```buildoutcfg
+ca=$(cat ca_base64)
+``` 
+```buildoutcfg
+client=$(cat client_base64)
+``` 
 
 2. Update the existing SBS instance on IBM Cloud.
 ```buildoutcfg
-ibmcloud hpvs instance-update SBContainer --rd-path secure_build.asc -i 1.3.0.2 -e CLIENT_CRT=$client -e CLIENT_CA=$ca
+ibmcloud hpvs instance-update SBContainer --rd-path secure_build.asc -i 1.3.0.3 -e CLIENT_CRT=$client -e CLIENT_CA=$ca
 ```
 
 3. Get a server certificate-signing-request (CSR) to sign with your CA.
@@ -617,6 +626,13 @@ ibmcloud hpvs instance-update SBContainer --rd-path secure_build.asc -i 1.3.0.2 
 5. Post the signed server certificate to SBS.
 ```buildoutcfg
 ./build.py post-server-cert --env <path>/sbs-config.json --noverify
+```
+
+6. If you are using IBM Cloud Registry as the Docker repository, then you must change "DOCKER_CONTENT_TRUST_BASE_SERVER" or "DOCKER_CONTENT_TRUST_PUSH_SERVER" to "https://notary.us.icr.io".
+
+7. To update the sbs container with notary server change, run the following command. 
+```buildoutcfg
+./build.py update --env <path>/sbs-config.json
 ```
 
 ## License
