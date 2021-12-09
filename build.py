@@ -20,7 +20,7 @@ from cryptography.hazmat.primitives.asymmetric import utils
 from cryptography.exceptions import InvalidSignature
 from filters import JsonFilter, StringFilter
 import requests
-from cicd.openssl import gen_ca, gen_csr, sign_csr
+from cicd.openssl import gen_ca, gen_csr
 import client_certificate
 import config_cipher
 import uuid
@@ -186,10 +186,13 @@ class Build:
         else:
             self.ssc_host = None
 
-        if 'cicd_public_ip' in self.params:
-            self.cicd_public_ip = self.params['cicd_public_ip']
+        if 'hostname' in self.params:
+            self.hostname = self.params['hostname']
         else:
-            self.cicd_public_ip = None
+            self.hostname = None
+            logger.fatal('HOSTNAME is not configured. Please configure HOSTNAME to generate certificates and to'
+                         ' communicate with secure build server.')
+            sys.exit(-1)
 
         if 'cicd_port' in self.params:
             self.cicd_port = self.params['cicd_port']
@@ -211,8 +214,8 @@ class Build:
     def cicd_socket_address(self):
         cicd_host = self.ssc_host
 
-        if self.cicd_public_ip != None:
-            cicd_host = self.cicd_public_ip
+        if self.hostname != None:
+            cicd_host = self.hostname
 
         return cicd_host + ":" + self.cicd_port
 
@@ -327,39 +330,14 @@ class Build:
         resp, status_code = self.request_api('status', requests.get, '/image', noverify=noverify, ignore_connection_error=ignore_connection_error)
         return resp
 
-    def get_server_csr(self, noverify=True):
-        (host_address, port) = self.cicd_socket_address().split(':')
-        resp, status_code = self.request_api('get-server-csr', requests.get, '/csr/'+host_address, noverify=noverify)
-        if 'csr' in resp:
-            csrpath = self.params['csrpath']
-            with open(csrpath, 'w') as f:
-                f.write(resp['csr'])
-        return resp
-
-    def post_server_cert(self, noverify=True):
-        if not 'server_cert' in self.params:
-            if 'certpath' in self.params:
-                certpath = self.params['certpath']
-            else:
-                certpath = self.client_certificate.cert_dir + '/server-cert.pem'
-            if not os.path.isfile(certpath):
-                logger.error('server_cert not found in params')
-                sys.exit(-1)
-            with open(certpath) as f:
-                self.params['server_cert'] = f.read()
-        body = {}
-        body['certificate'] = self.params['server_cert']
-        resp, status_code = self.request_api('post-server-cert', requests.post, '/certificate', noverify=noverify, json_data=body)
-        return resp
-
     def create_client_cert(self):
         self.client_certificate.client_certificate(gen_cert=True)
 
+    def create_server_cert(self):
+        self.client_certificate.server_certificate(gen_cert=True)
+
     def delete_certificates(self):
         self.client_certificate.delete_certificates()
-
-    def sign_csr(self):
-        self.client_certificate.sign_csr()
 
     def get_state_image(self):
         body = {}
@@ -477,9 +455,18 @@ class Build:
                 root_ssh_key = base64.b64encode(f.read().encode('utf-8')).decode('utf-8')
             env_vars['ROOT_SSH_KEY'] = root_ssh_key
         cert, ca = self.client_certificate.client_certificate(gen_cert=False)
+        server_cert, server_key = self.client_certificate.server_certificate(gen_cert=False)
+        cc = config_cipher.ConfigCipher(args.loglevel)
+        #Importing the public key.
+        fingerprint = cc.import_hpvs_public_key()
+        ascii_value_server_key = cc.encrypt_env_variables(server_key)
+        #Encoding the public key.
         env_vars['CLIENT_CRT'] = base64.b64encode(cert.encode('utf-8')).decode('utf-8')
         env_vars['CLIENT_CA'] = base64.b64encode(ca.encode('utf-8')).decode('utf-8')
+        env_vars['SERVER_CRT'] = base64.b64encode(server_cert.encode('utf-8')).decode('utf-8')
+        env_vars['SERVER_KEY'] = base64.b64encode(ascii_value_server_key.encode('utf-8')).decode('utf-8')
         env = ' '.join(['-e '+key+'='+value for key, value in env_vars.items()])
+        logger.info('\n\n ****** Copy below environment variables and use in instance-create command. ****** \n\n')
         print(env)
         return env
 
@@ -608,7 +595,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(prog='build.py')
     parser.add_argument("-v", "--verbose", action="count", default=0, help="increase verbosity")
     parser.add_argument("--version", action="version", version="%(prog)s v0.221", help="show version")
-    parser.add_argument("command", help="[init|update|build|clean|status|log|get-config-json|get-config-python|get-manifest|get-publickey|get-server-csr|sign-csr|post-server-cert|get-state-image|post-state-image|create-client-cert|delete-certificates|instance-env]")
+    parser.add_argument("command", help="[init|update|build|clean|status|log|get-config-json|get-config-python|get-manifest|get-publickey|get-state-image|post-state-image|create-client-cert|create-server-cert|delete-certificates|instance-env]")
     parser.add_argument("--github-key-file", help="github_key_file")
     parser.add_argument("--log", help="log_name")
     parser.add_argument("--loglevel", default='INFO', help="log level")
@@ -675,15 +662,6 @@ if __name__ == '__main__':
             build.verify_manifest(manifest_name, public_key_pem, args.verify_test)
     elif command == "get-publickey":
         build.get_publickey()
-    elif command == "get-server-csr":
-        build.more_verbose()
-        build.get_server_csr(noverify=args.noverify)
-    elif command == 'sign-csr':
-        build.more_verbose()
-        build.sign_csr()
-    elif command == "post-server-cert":
-        build.more_verbose()
-        build.post_server_cert(noverify=args.noverify)
     elif command == "get-state-image":
         build.get_state_image()
     elif command == "post-state-image":
@@ -692,6 +670,9 @@ if __name__ == '__main__':
     elif command == "create-client-cert":
         build.more_verbose()
         build.create_client_cert()
+    elif command == "create-server-cert":
+        build.more_verbose()
+        build.create_server_cert()
     elif command == "delete-certificates":
         build.more_verbose()
         build.delete_certificates()
@@ -699,3 +680,5 @@ if __name__ == '__main__':
         build.instance_env()
     else:
         logger.fatal("unknown command: " + command)
+
+

@@ -35,6 +35,18 @@ def setX509Name(x509, subject):
         if '=' in attribute:
             setX509Attr(x509, attribute)
 
+# Used to extract san value from a certificate
+def getSANValue(cert_path):
+     server_cert = crypto.load_certificate(crypto.FILETYPE_PEM, open(cert_path).read())
+     san = ''
+     ext_count = server_cert.get_extension_count()
+     for i in range(0, ext_count):
+        ext = server_cert.get_extension(i)
+        if 'subjectAltName' in str(ext.get_short_name()):
+            san = ext.__str__()
+     return san
+
+
 def gen_ca(ca_subject, ca_path, ca_key_path):
     ca_key = crypto.PKey()
     ca_key.generate_key(crypto.TYPE_RSA, 2048)
@@ -117,6 +129,39 @@ def sign_csr(cert_path, csr_path, ca_path, ca_key_path):
         crypto.X509Extension(b'authorityKeyIdentifier', False, b'keyid:always', issuer=ca_cert),
         crypto.X509Extension(b'extendedKeyUsage', False, b'clientAuth,serverAuth'),
         crypto.X509Extension(b'keyUsage', False, b'digitalSignature'),
+    ])
+    cert.add_extensions(csr.get_extensions())
+    cert.set_issuer(ca_cert.get_subject()) # ca subject
+    cert.set_subject(csr.get_subject())
+    cert.set_pubkey(csr.get_pubkey())
+    cert.sign(ca_key, 'sha256') # ca key
+
+    cert_bytes = crypto.dump_certificate(crypto.FILETYPE_PEM, cert)
+
+    with open(cert_path, 'w') as f:
+        f.write(cert_bytes.decode('utf-8'))
+
+    return cert 
+
+def sign_server_csr(cert_path, csr_path, ca_path, ca_key_path, san=[]):
+    csr = crypto.load_certificate_request(crypto.FILETYPE_PEM, open(csr_path).read())
+    ca_cert = crypto.load_certificate(crypto.FILETYPE_PEM, open(ca_path).read())
+    ca_key = crypto.load_privatekey(crypto.FILETYPE_PEM, open(ca_key_path).read())
+
+    cert = crypto.X509()
+    cert.set_version(2)
+    cert.set_serial_number(random.randint(50000000,100000000))
+    cert.gmtime_adj_notBefore(0)
+    cert.gmtime_adj_notAfter(60*60*24*365) # 1 year
+    cert.add_extensions([
+    crypto.X509Extension(b'basicConstraints', False, b'CA:FALSE'),
+        crypto.X509Extension(b'subjectKeyIdentifier', False, b'hash', subject=cert),
+    ])
+    cert.add_extensions([
+        crypto.X509Extension(b'authorityKeyIdentifier', False, b'keyid:always', issuer=ca_cert),
+        crypto.X509Extension(b'extendedKeyUsage', False, b'serverAuth'),
+        crypto.X509Extension(b'keyUsage', False, b'digitalSignature'),
+        crypto.X509Extension(b'subjectAltName', False, ','.join(san).encode()),
     ])
     cert.add_extensions(csr.get_extensions())
     cert.set_issuer(ca_cert.get_subject()) # ca subject

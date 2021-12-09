@@ -10,7 +10,7 @@
 #
 import sys, os, logging, shutil
 from OpenSSL import crypto
-from cicd.openssl import gen_ca, gen_csr, sign_csr
+from cicd.openssl import gen_ca, gen_csr, sign_csr, sign_server_csr, getSANValue
 import uuid
 
 class ClientCertificate:
@@ -166,6 +166,70 @@ class ClientCertificate:
         #print("generated cert_bytes: " + cert_bytes.decode('utf-8'))
         return cert_bytes, None
 
+    def server_certificate(self, gen_cert=True):
+
+        client_crt_key = self.params['client_crt_key']
+        capath = self.params['capath']
+        cakeypath = self.params['cakeypath']
+        san = self.params['hostname']
+        cert_dir = self.cert_dir
+        cert_path = cert_dir+'/server-cert.pem'
+        cert_key_path = cert_dir+'/server-cert-key.pem'
+
+        san = 'DNS:'+san
+
+        if os.path.exists(cert_path):
+            san_value = getSANValue(cert_path)
+            if (san != san_value):
+                logging.fatal('server_certificate: Regenerating the server certificate with the SAN value provided'
+                              ' in json file. In certificate san value is : '+san_value + ' and in json file: ' + san)
+            else:
+                gen_cert = False
+
+        if gen_cert == False:
+            server_cert = None
+            if os.path.exists(cert_path):
+                with open(cert_path, 'r') as f:
+                    cert = f.read()
+                with open(cert_key_path, 'r') as f:
+                    cert_key = f.read()
+            return cert, cert_key
+
+        if not os.path.exists(client_crt_key):
+                logging.error('Create the directory, CA certificate and client certificate first. Then retry to create server certificate.')
+                sys.exit(-1)
+
+
+        if os.path.exists(client_crt_key) and os.path.exists(capath) and os.path.exists(cakeypath):
+            logging.info('server_certificate: using supplied pem files cert_directory={} capath={} cakeypath={}'.format(client_crt_key, capath, cakeypath))
+            
+        logging.info('server_certificate: Generating server certificate')
+
+        if self.cloud:
+            cert_dir = self.cert_dir
+            if not os.path.isdir(cert_dir):
+                try:
+                    os.mkdir(cert_dir)
+                except Exception as e:
+                    logging.error('failed to create a working directory at {} e={}'.format(cert_dir, e))
+                    sys.exit(-1)
+
+        cert_subject = '/C=US/ST=NY/L=Armonk/O=IBM/OU=Digital Assets/CN=Server'
+        csr_path = cert_dir+'/server-csr.pem'
+        cert_key_path = cert_dir+'/server-cert-key.pem'
+        cert_path = cert_dir+'/server-cert.pem'
+        san_list = list(san.split(", "))
+
+        _, cert_key = gen_csr(cert_subject, csr_path, cert_key_path)
+        logging.info('server_certificate: Successfully generated server CSR')
+
+        cert = sign_server_csr(cert_path, csr_path, capath, cakeypath, san_list)
+        logging.info('server_certificate: Successfully generated server certificate')
+
+        cert_bytes = crypto.dump_certificate(crypto.FILETYPE_PEM, cert)
+        return cert_bytes, cert_key_path
+
+
     def exit_if_exist(self, *files):
         existing_files = []
         for file in files:
@@ -173,7 +237,7 @@ class ClientCertificate:
                 existing_files.append(file)
         if len(existing_files) > 0:
             logging.error('client_certificate: exiting because the following files already exist - {}'.format(' '.join(existing_files)))
-            logging.error('client_certificate: specify CLIENT_CRT_KEY, CAPATH, and CAKEYPATH or empty the directory')
+            logging.error('client_certificate: speficy CLIENT_CRT_KEY, CAPATH, and CAKEYPATH or empty the directory')
 
             sys.exit(-1)
 
@@ -191,3 +255,4 @@ class ClientCertificate:
             client_crt_dir = client_crt_path + '.d'
             if os.path.isdir(client_crt_dir):
                 shutil.rmtree(client_crt_dir)
+

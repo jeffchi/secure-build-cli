@@ -9,9 +9,6 @@ push the manifest to Cloud Object Storage, or the developer can download it on a
   <img src="./images/secure-build.png">
 </p>
 
-<!--
-Secure Build Service is basically used to build and sign docker images where signing key will be secure. No one can see signing private key. Even image builder can not see the signing private key.
--->
 
 ## Before you begin
 
@@ -28,8 +25,9 @@ The following is a list of hardware or software requirements:
 - Registration definition file of Secure Build Server (secure_build.asc) from [IBM Cloud Docs](https://cloud.ibm.com/docs/hp-virtual-servers?topic=hp-virtual-servers-imagebuild).
 
 
+
 ## Install the CLI
-The CLI script is written in Python and has been tested using Python 3.6.9. You must install Python3 and pip3, if you don't have them on your client system. The build.py is the main script that comes with secure-build-cli. This script helps you to interact and do the required operations on the SBS instance after it is created by using the IBM Cloud CLI. For systems that run Ubuntu, you can run the following commands to install them.
+The CLI script is written in Python and has been tested using Python 3.6.9. You must install Python3 and pip3, if you don't have them on your client system. The `build.py` is the main script that comes with secure-build-cli. This script helps you to interact and do the required operations on the SBS instance after it is created by using the IBM Cloud CLI. For systems that run Ubuntu, you can run the following commands to install them.
 ```
 apt-get update
 apt-get install python3 python3-pip
@@ -48,7 +46,7 @@ pip3 install -r requirements.txt
 Create the `sbs-config.json` file in any location you choose on your local machine, and add the following content in the file:
 ```
 {
-  "CICD_PUBLIC_IP": "",
+  "HOSTNAME": "sbs.example.com",
   "CICD_PORT": "443",
   "IMAGE_TAG": "",
   "GITHUB_KEY_FILE": "~/.ssh/id_rsa",
@@ -76,9 +74,9 @@ Create the `sbs-config.json` file in any location you choose on your local machi
 
 Where
 ```
-CICD_PUBLIC_IP - IP address of the SBS server. Leave it as "" since it is unknown until the server is provisioned.
+HOSTNAME - Hostname of the SBS server which will be used while generating certificates and communicating with the secure build server.
 CICD_PORT - port on which a build service is running (default: 443).
-IMAGE_TAG - image tag of the container image to be deployed as SBS server. Use "1.3.0.3" unless otherwise noted.
+IMAGE_TAG - image tag of the container image to be deployed as SBS server. Use "1.3.0.4" unless otherwise noted.
 GITHUB_KEY_FILE - Private key path to access your GitHub repo.
 GITHUB_URL - GitHub URL.
 GITHUB_BRANCH - GitHub branch name.
@@ -113,11 +111,30 @@ Note:
 
 - The `<domain_name>` specifies the location of IBM Cloud Container Registry (e.g. `us.icr.io`). Select the domain name for one of [avilable regions](https://cloud.ibm.com/docs/Registry?topic=Registry-registry_overview#registry_regions).
 If you are using the IBM Cloud Registry notary server, and you specified the `<domain_name>` as `us.icr.io`, then specify `https://notary.us.icr.io` as the value for `DOCKER_CONTENT_TRUST_PUSH_SERVER`.
-As another example, if value of `DOCKER_REPO=de.icr.io`, then the value of `DOCKER_CONTENT_TRUST_PUSH_SERVER` would be `https://notary.de.icr.io`
-To know more about IBM Cloud registry, see [Getting started with IBM Cloud Container Registry](https://cloud.ibm.com/docs/Registry?topic=Registry-getting-started).
+As another example, if value of `DOCKER_REPO=de.icr.io`, then the value of `DOCKER_CONTENT_TRUST_PUSH_SERVER` would be `https://notary.de.icr.io`. To know more about IBM Cloud registry, see [Getting started with IBM Cloud Container Registry](https://cloud.ibm.com/docs/Registry?topic=Registry-getting-started).
 
-- If the base image is in a private repository, then you must configure "DOCKER_CONTENT_TRUST_BASE" with a value "True", "DOCKER_CONTENT_TRUST_BASE_SERVER" is set with the notary server URL, and configure "DOCKER_BASE_USER" and "DOCKER_BASE_PASSWORD" with the credentials. "
+- If the base image is in a private repository, then you must configure "DOCKER_CONTENT_TRUST_BASE" with a value "True", "DOCKER_CONTENT_TRUST_BASE_SERVER" is set with the notary server URL, and configure "DOCKER_BASE_USER" and "DOCKER_BASE_PASSWORD" with the credentials."
 
+- To update the hostname, or to update the instance with a new certificate when the old certificate expires, complete the following steps:
+  1. Backup the `sbs-config.json` file, and edit the file to remove the "UUID" parameter.
+  2. Update the hostname in the `sbs-config.json` (in the case of certificate expiration, you need not update the hostname).
+  3. Regenerate the certificate by running the commands
+    ```buildoutcfg
+    ./build.py create-client-cert --env sbs-config.json"
+    ```
+    and
+    ```buildoutcfg
+    ./build.py create-server-cert --env sbs-config.json"
+    ```
+  4. Update the `/etc/hosts` file with the new hostname (in the case of certificate expiration, you need not update the hostname).
+  5. Run the following command to get the new certificate:
+     ```buildoutcfg
+     ./build.py instance-env --env sbs-config.json
+     ```
+  6. Run the following command to update the SBS instance (in the case of certificate expiration, you need not update the hostname):
+  ```buildoutcfg
+  ibmcloud hpvs instance-update SBContainer --rd-path secure_build.asc -i 1.3.0.4 --hostname sbs.example.com -e CLIENT_CRT=... -e CLIENT_CA=... -e SERVER_CRT=... -e SERVER_KEY=..."{}
+  ```  
 
 Also see [Additional Build Parameters](additional-build-parameters.md).
 
@@ -132,28 +149,31 @@ ibmcloud plugin install container-registry -r Bluemix -f
 ibmcloud plugin install hpvs
 ```
 
+Note: Update the IBM Cloud CLI if it is installed already.
+
 2. Log in to IBM Cloud by using either an API key, or the Single Sign On (SSO) authentication. See [Getting started with the IBM Cloud CLI](https://cloud.ibm.com/docs/cli?topic=cli-getting-started) for more details.
 
-3. Configure the `sbs-config.json` file with client certificates using one of the following options.
+3. Configure the `sbs-config.json` file with certificates by using one of the following options.
    1. Use build.py to create certificate-authority (CA) and client certificates which are used for secure communication from your client script to the SBS instance.
       ```buildoutcfg
       ./build.py create-client-cert --env <path>/sbs-config.json
       ```
       After you execute above command, a directory is generated that looks like this: `.SBContainer-9ab033ad-5da1-4c4e-8eae-ca8c468dbbcc.d`.
-      You can notice that two parameters "UUID" and "SECRET", are added to the `sbs-config.json` file.
+      You will notice that two parameters "UUID" and "SECRET", are added to the `sbs-config.json` file.
       UUID is used along with the container name where the generated certificates are stored.
-      SECRET holds a randomly generated value, which needs to be preserved safely, used to deal with a state image of SBS. Continue to step #4.  
+      SECRET holds a randomly generated value, which needs to be preserved safely, and is used to deal with the state image of SBS. Continue to step #4.  
       Note:-      
-      - Follow the best practices of certificate management.
-      - The CA certificate should not be compromised or revoked.
-      - Third-party certificates are not supported.
+      - Follow the best practices of certificate management.  
+      - The CA certificate should not be compromised or revoked.  
+      - Third-party certificates are not supported.  
+
    2. Use your own certificate-authority (CA) and client certificates.
       1. Go to the CLI directory. If it is located at `~/git`, run the following command:
          ```
          cd ~/git/secure-build-cli
          ```
       2. Add the following path names to the  `sbs-config.json` file.
-         Note that the `server-csr.pem` and `server-cert.pem` do not exist as yet. If the `./sbs-keys` directory doesn’t exist, you can create one by using the command `mkdir ./sbs-keys`.
+         Note that the `server-csr.pem` and `server-cert.pem` do not exist as yet. If the `./sbs-keys` directory does not exist, you can create one by using the command `mkdir ./sbs-keys`.
          ```
          "CAPATH": "Path to CA certificate",
          "CAKEYPATH": "Path to CA key",
@@ -161,56 +181,43 @@ ibmcloud plugin install hpvs
          "CSRPATH": "./sbs-keys/server-csr.pem",
          "CERTPATH": "./sbs-keys/server-cert.pem",
          ```
-         To get the base64-encoded certificates into CERT_ENV using build.py, run the following command:
-         ```
-         CERT_ENV=`./build.py instance-env --env <path>/sbs-config.json`
-         ```
-      3. Create a the Hyper Protect Virtual Servers instance by using the `ibmcloud hpvs instance-create` command.  
-         ```
-         ibmcloud hpvs instance-create docker.io-ibmzcontainers-acrux-dev1 lite-s syd05 --rd-path secure_build.asc --image-tag 1.3.0.3 $CERT_ENV
-         ```
-         Continue to step #6.            
-         Note:-       
-         - Follow the best practices of certificate management.
-         - The CA certificate should not be compromised or revoked.
-         - Third-party certificates are not supported.
-4. Copy your CA and client certificates under directory `.SBContainer-9ab033ad-5da1-4c4e-8eae-ca8c468dbbcc.d` to file `client_base64` and `ca_base64` in a base64 format respectively.
-```buildoutcfg
-echo $(cat .SBContainer-9ab033ad-5da1-4c4e-8eae-ca8c468dbbcc.d/client-cert.pem | base64) | tr -d ' ' > client_base64
-echo $(cat .SBContainer-9ab033ad-5da1-4c4e-8eae-ca8c468dbbcc.d/client-ca.pem | base64) | tr -d ' ' > ca_base64
-```
-Alternatively, you can get base64-encoded certificates by running the following command.
+         Note:-      
+         - Follow the best practices of certificate management.    
+         - The CA certificate should not be compromised or revoked.    
+         - Third-party certificates are not supported.   
+
+4. Use build.py to create the server certificate signed by the CA certificate generated that was generated in the previous  step. It will be setup on the server for secure communication.
+      ```buildoutcfg
+      ./build.py create-server-cert --env <path>/sbs-config.json
+      ```
+
+5. Get the environment key value pair to be used in instance-create command by running the following command.
 ```buildoutcfg
 ./build.py instance-env --env <path>/sbs-config.json
 ```
 
-5. Create the SBS instance on cloud.
+6. Create the SBS instance on cloud. You can copy and paste the output from `instance-env` command as command-line parameters for the `instance-create` command.
 ```buildoutcfg
-ca=$(cat ca_base64)
-client=$(cat client_base64)
-ibmcloud hpvs instance-create SBContainer lite-s dal13 --rd-path secure_build.asc -i 1.3.0.3 -e CLIENT_CRT=$client -e CLIENT_CA=$ca
-```
-Alternatively, you can copy & paste the output from `instance-env` command as command-line parameters for the `instance-create` command.
-```buildoutcfg
-ibmcloud hpvs instance-create SBContainer lite-s dal13 --rd-path secure_build.asc -i 1.3.0.3 -e CLIENT_CRT=... -e CLIENT_CA=...
+ibmcloud hpvs instance-create SBContainer lite-s dal13 --rd-path secure_build.asc -i 1.3.0.4 --hostname sbs.example.com -e CLIENT_CRT=... -e CLIENT_CA=... -e SERVER_CRT=... -e SERVER_KEY=...
 ```
 Where:  
 - SBContainer is the name of the SBS instance to be created.      
 - lite-s is the plan name.  
 - dal13 is the region name.  
-- 1.3.0.3 is the image tag of Secure Docker Build docker image.
+- 1.3.0.4 is the image tag of Secure Docker Build docker image.
+- hostname is the server hostname that was given in sbs-config.json.
 
 To know more details about which plan to use and which region to use, see [hpvs instance-create](https://cloud.ibm.com/docs/hpvs-cli-plugin?topic=hpvs-cli-plugin-hpvs_cli_plugin#create_instance).
 
-6. You can list the Hyper Protect Virtual Servers instances.
+7. You can list the Hyper Protect Virtual Servers instances.
 ```buildoutcfg
 ibmcloud hpvs instances
 ```
-After the instance is up and running, then you can see `Public IP address` in the instance list.
+After the instance is up and running, you can see `Public IP address` in the instance list.
 
-7. Copy this IP address in `sbs-config.json` as shown.
+8. Map the Public IP address with the hostname provided for the server in /etc/hosts file.
 ```buildoutcfg
-"CICD_PUBLIC_IP": "<IP Address>"
+10.20.x.xx  abc.test.com
 ```
 
 ## How to build image by using SBS
@@ -218,57 +225,28 @@ After you create the SBS instance, complete the following steps to build your im
 
 1. Check the status of SBS.
 ```buildoutcfg
-./build.py status --env <path>/sbs-config.json --noverify
-```
-Before initializing SBS, it returns an empty string as status.
-```
+./build.py status --env <path>/sbs-config.json
 INFO:__main__:status: response={
     "status": ""
 }
 ```
-
-2. Get a server certificate-signing-request (CSR) to sign with your CA.
-```buildoutcfg
-./build.py get-server-csr --env <path>/sbs-config.json --noverify
-```
-3. Sign the server CSR.
-```buildoutcfg
-./build.py sign-csr --env <path>/sbs-config.json
-```
-4. Post the signed server certificate to SBS.
-```buildoutcfg
-./build.py post-server-cert --env <path>/sbs-config.json --noverify
-```
-5. Now again check the status without `noverify` option.
-```buildoutcfg
-./build.py status --env <path>/sbs-config.json
-```
-The `post-server-cert` command lets SBS to install the signed certificate and
-to restart the nginx server to make it effective.
-From here, you don't need `--noverify`; the client verifies the server certificate
-at every API call.
-```
-INFO:__main__:status: response={
-    "status": "restarted nginx"
-}
-```
-6. Initialize the configuration.
+2. Initialize the configuration.
 ```buildoutcfg
 ./build.py init --env <path>/sbs-config.json
 ```
-7. Build the image.
+3. Build the image.
 ```buildoutcfg
 ./build.py build --env <path>/sbs-config.json
 ```
-8. Check the build log.
+4. Check the build log.
 ```buildoutcfg
 ./build.py log --log build --env <path>/sbs-config.json
 ```
-9. Check the status if the image has been built and pushed successfully.
+5. Check whether the image has been built and pushed successfully.
 ```buildoutcfg
 ./build.py status --env <path>/sbs-config.json
 ```
-As the build process makes a progress, the `status` response shows the last completed step.
+As the build progresses, the `status` response shows the last completed step.
 Here is a typical sequence of responses for a successful build.
 ```
 {
@@ -292,8 +270,7 @@ Here is a typical sequence of responses for a successful build.
     "status": "success"
 }
 ```
-When an error occurs, the `status` response shows the command that caused the error. Typically, you need to examine the build log
-to fix the issue.
+When an error occurs, the `status` response shows the command that caused the error. Typically, you need to examine the build log to fix the issue.
 ```
 {
   ...
@@ -314,7 +291,7 @@ e.g. `--key-id isv_user --email isv@example.com`
 The `<key_id>` is for a GPG key to sign the file. If omitted, the default id is `secure-build`. The email address
 is used to identify the key. If omitted, the GPG library will pick up a default one, typically `<your_login_id>@<domain_name_of_client>`.
 
-During above command you will be asked to create a passphrase. Enter the passphrase twice (the second time is for confirmation). Then again passphrase will be asked to sign the file.
+During the above command you will be asked to create a passphrase. Enter the passphrase twice (the second time is for confirmation). Then again passphrase will be asked to sign the file.
 
 Now the registration definition file for the newly built image, `sbs.enc`, is stored in your current directory. The file name is `REPO_ID` in sbs-config.json + `.enc`.
 
@@ -336,7 +313,7 @@ b. You can log in to your container registry (e.g. Docker Hub) and check the tag
 
 3. Create the Hyper Protect Virtual Servers instance by using the `ibmcloud hpvs instance-create` command.
 ```buildoutcfg
-ibmcloud hpvs instance-create container_name lite-s dal13 --rd-path sbs.enc -i image_tag {-e listed_environment_variable1=value1 ...}
+ibmcloud hpvs instance-create container_name lite-s dal13 --rd-path sbs.enc -i image_tag --hostname sbs.example.com {-e listed_environment_variable1=value1 ...}
 ```
 
 ## Manifest file
@@ -408,6 +385,7 @@ Why do we need the state image?
 You need it to recover the signing key and additional SBS internal states to build the image in a new SBS instance after the original instance is deleted or corrupted.
 
 ## How to get the state image
+
 1. Get the state image locally.
 ```buildoutcfg
 ./build.py get-state-image --env <path>/sbs-config.json
@@ -453,106 +431,89 @@ Complete the following steps:
 
 1. Create a new SBS instance as mentioned in the section [Deploying the Secure Build Server](README.md#deploying-the-secure-build-server), with the same secret that was used to get the state image, otherwise the post state image operation fails.
 
-2. Check the status of SBS.
+2. Map the Public IP address with the hostname provided for the server in /etc/hosts file.
 ```buildoutcfg
-./build.py status --env <path>/sbs-config.json --noverify
+10.20.x.xx  abc.test.com
 ```
-3. Get a server CSR to sign with your CA
-```buildoutcfg
-./build.py get-server-csr --env <path>/sbs-config.json --noverify
-```
-4. Sign the server CSR.
-```buildoutcfg
-./build.py sign-csr --env <path>/sbs-config.json
-```
-5. Post the signed server certificate to SBS.
-```buildoutcfg
-./build.py post-server-cert --env <path>/sbs-config.json --noverify
-```
-6. Now again check the status.
+
+3. Check the status of SBS.
 ```buildoutcfg
 ./build.py status --env <path>/sbs-config.json
 ```
-7. Post the state image.
+4. Post the state image.
 ```buildoutcfg
 ./build.py post-state-image --state-image docker.io.prabhat54331.sbs22.s390x-v0.1-60fd72e.2020-10-21_07-20-08.516797 --env <path>/sbs-config.json
 ```
 Use the `--state-image` option to specify the state image file you downloaded previously with the `get-state-image` command.
 
-8. Update the configuration.
+5. Update the configuration.
 ```buildoutcfg
 ./build.py update --env <path>/sbs-config.json
 ```
-9. Now you can further build your image using build command. Eventually your Docker image will be pushed to same registry.
+
+6. Now you can further build your image using build command. Eventually your Docker image will be pushed to same registry.
 ```buildoutcfg
 ./build.py build --env <path>/sbs-config.json
 ```
-10. Check the build log and wait until the build operation is completed
+
+7. Check the build log and wait until the build operation is completed.
 ```buildoutcfg
 ./build.py log --log build --env <path>/sbs-config.json
 ```
-11. Check the status of the container
+
+8. Check the status of the container.
 ```buildoutcfg
 ./build.py status --env <path>/sbs-config.json
 ```
 
-## How to recover state image from Cloud Object Storage
+## How to recover the state image from Cloud Object Storage
 Complete the following steps:  
 
 1. Create a new SBS server as mentioned in the section [Deploying the Secure Build Server](README.md#deploying-the-secure-build-server), and use the same secret that was used to get the state image, otherwise the post state image operation fails.
 
-2. Check the status of SBS.
+2. You can list the Hyper Protect Virtual Servers instances.
 ```buildoutcfg
-./build.py status --env <path>/sbs-config.json --noverify
+ibmcloud hpvs instances
+```
+After the instance is up and running, you can see `Public IP address` in the instance list.
+
+3. Map the Public IP address with the hostname provided for the server in /etc/hosts file.
+```buildoutcfg
+10.20.x.xx  abc.test.com
 ```
 
-3. Get a server CSR to sign with your CA.
-```buildoutcfg
-./build.py get-server-csr --env <path>/sbs-config.json --noverify
-```
-
-4. Sign the server CSR.
-```buildoutcfg
-./build.py sign-csr --env <path>/sbs-config.json
-```
-
-5. Post the signed server certificate to SBS.
-```buildoutcfg
-./build.py post-server-cert --env <path>/sbs-config.json --noverify
-```
-
-6. Now again check the status.
+4. Check the status of SBS.
 ```buildoutcfg
 ./build.py status --env <path>/sbs-config.json
 ```
 
-7. Use the same `sbs-config.json` file. Ensure that you have changed the parameter `CICD_PUBLIC_IP` with the newly created IP address of your SBS server.
+5. Use the same `sbs-config.json` file.
 
-8. Initialize the configuration.
+6. Initialize the configuration.
 ```buildoutcfg
 ./build.py init --env <path>/sbs-config.json
 ```
 
-9. Post the state image.
+7. Post the state image.
 ```buildoutcfg
 ./build.py post-state-image --env <path>/sbs-config.json --name docker.io.prabhat54331.sbs22.s390x-v0.1-60fd72e.2020-10-21_07-20-08.516797 {--state-bucket-name <your_bucket_name>}
 ```
 Use the `--state-bucket-name` option, if you want to override the parameter in `sbs-config.json` or you don't have one in the file.
 Use the `--name` option to specifiy the name of the state image on COS, which is the same as the name of the meta data file you downloaded with the `get-state-image` command.
 
-10. Update the configuration.
+8. Update the configuration.
 ```buildoutcfg
 ./build.py update --env <path>/sbs-config.json
 ```
-11. You can build your image using build command. Eventually your Docker image will be pushed to same registry.
+9. You can build your image using build command. Eventually your Docker image will be pushed to same registry.
 ```buildoutcfg
 ./build.py build --env <path>/sbs-config.json
 ```
-12. Check the build log and wait until the build operation is completed.
+10. Check the build log and wait until the build operation is completed.
 ```buildoutcfg
 ./build.py log --log build --env <path>/sbs-config.json
 ```
-13. Check the status of SBS.
+11. Check the status of SBS.
 ```buildoutcfg
 ./build.py status --env <path>/sbs-config.json
 ```
@@ -596,51 +557,72 @@ Complete the following steps:
 
 Note: After the secret is updated, you cannot use a state image obtained using the previous one. Consider obtaining a state image again with the new secret.
 
+
 ## Updating the Secure Build Server instance to the latest image
 
-When you want to update the Secure Build Server instance from an earlier image to the latest image (for example, from 1.3.0.2 to 1.3.0.3), you must run the following commands:
+1. Export the state image as mentioned in the section [How to get the state image](README.md#how-to-get-the-state-image). This is to ensure that you have a backup.
 
-1. To get base64-encoded certificates, run either of the following commands.
-```buildoutcfg
-./build.py instance-env --env sbs-config.json 
- ```  
+2. Modify the `sbs-config.json` file for 1.3.0.4 according to the following instructions:
+   1. Delete the `UUID` parameter.
+   2. Add the `HOSTNAME`parameter.
+   3. Delete the `CICD_PUBLIC_IP ` parameter.
+   4. Ensure that you do not remove or change the `SECRET`.
 
- or 
+3. Use build.py to create certificate-authority (CA) and client certificates which are used for secure communication from your client script to the SBS instance.
 ```buildoutcfg
-ca=$(cat ca_base64)
-``` 
-```buildoutcfg
-client=$(cat client_base64)
-``` 
-
-2. Update the existing SBS instance on IBM Cloud.
-```buildoutcfg
-ibmcloud hpvs instance-update SBContainer --rd-path secure_build.asc -i 1.3.0.3 -e CLIENT_CRT=$client -e CLIENT_CA=$ca
+./build.py create-client-cert --env <path>/sbs-config.json
 ```
 
-3. Get a server certificate-signing-request (CSR) to sign with your CA.
+4. Use build.py to create the server certificate signed by the CA certificate that was generated in the previous step. It will be setup on the server for secure communication.
 ```buildoutcfg
-./build.py get-server-csr --env <path>/sbs-config.json --noverify
+./build.py create-server-cert --env <path>/sbs-config.json
 ```
 
-4. Sign the server CSR.
+5. Get the environment key value pair to be used in instance-create command by running the following command.
 ```buildoutcfg
-./build.py sign-csr --env <path>/sbs-config.json
+./build.py instance-env --env <path>/sbs-config.json
 ```
 
-5. Post the signed server certificate to SBS.
+6. Update the instance
 ```buildoutcfg
-./build.py post-server-cert --env <path>/sbs-config.json --noverify
+ibmcloud hpvs instance-update SBContainer -i 1.3.0.4 --rd-path "registration.json.asc" --hostname="sbs.example.com" -e CLIENT_CRT=... -e CLIENT_CA=... -e SERVER_CRT=... -e SERVER_KEY=...
 ```
 
-6. Edit the `sbs-config.json` file and change the image tag to 1.3.0.3.
+Note:
+   * For the `HOSTNAME` parameter, use the value that was provided for HOSTNAME in the sbs-config.json file.
+   * Use the repository definition file from [step 2](https://cloud.ibm.com/docs/hp-virtual-servers?topic=hp-virtual-servers-imagebuild#deploysecurebuild).
 
-7. If you are using IBM Cloud Registry as the Docker repository, then you must change "DOCKER_CONTENT_TRUST_BASE_SERVER" or "DOCKER_CONTENT_TRUST_PUSH_SERVER" to "https://notary.<domain_name>, for example, https://notary.us.icr.io".
-
-8. To update the sbs container with notary server change, run the following command. 
+7. To check the status of the update process, run the following command.
 ```buildoutcfg
-./build.py update --env <path>/sbs-config.json
+ibmcloud hpvs instance
 ```
+The following is an example of the output.
+```
+Name                  SBSContainer
+CRN                   crn:v1:staging:public:hpvs:dal13:a/1075962b93044362a562c8deebbfba2e:0b2df6e9-ec2c-4b4a-87dd-60f53f6a2a0d::
+Location              dal13
+Cloud tags
+Cloud state           active
+Server status         running
+Plan                  Free
+Public IP address     52.116.29.50
+Internal IP address   172.17.151.218
+Boot disk             25 GiB
+Data disk             25 GiB
+Memory                2048 MiB
+Processors            1 vCPUs
+Image type            self-provided
+Image OS              self-defined
+Image name            de.icr.io/zaas-hpvsop-prod/secure-docker-build:1.3.0.4
+Environment           CLIENT_CA=...
+                      CLIENT_CRT=...
+                      SERVER_CRT=...
+                      SERVER_KEY=...
+Last operation        update succeeded
+Last image update     2021-12-06 05:13
+Created               2021-12-06
+```
+
 
 ## License
 
@@ -654,4 +636,4 @@ if you're contributing as an individual, or
 [corporate CLA form](https://gist.github.com/moriohara/e2ad4706f1142089c181d1583f8e6883)
 if you're contributing as part of your job.
 
-You are required to do this only once at on-line with [cla-assistant](https://github.com/cla-assistant/cla-assistant) when a pull request is created, and then you are free to contribute to the secure-build-cli project.
+You are required to do this only once on-line with [cla-assistant](https://github.com/cla-assistant/cla-assistant) when a pull request is created, and then you are free to contribute to the secure-build-cli project.
