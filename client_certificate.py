@@ -237,7 +237,7 @@ class ClientCertificate:
                 existing_files.append(file)
         if len(existing_files) > 0:
             logging.error('client_certificate: exiting because the following files already exist - {}'.format(' '.join(existing_files)))
-            logging.error('client_certificate: speficy CLIENT_CRT_KEY, CAPATH, and CAKEYPATH or empty the directory')
+            logging.error('client_certificate: specify CLIENT_CRT_KEY, CAPATH, and CAKEYPATH or empty the directory')
 
             sys.exit(-1)
 
