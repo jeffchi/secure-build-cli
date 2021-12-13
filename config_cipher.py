@@ -13,6 +13,7 @@ from filters import JsonFilter
 
 ha_public_key = """
 -----BEGIN PGP PUBLIC KEY BLOCK-----
+
 mQINBGAZXMIBEACmTMLOkLT/1ldxAZF1ZNNxim4lrBAnvfedB7SvCS1C95wjXSS5
 AmWy7UclwPdpOMk2XoU6gg0XNQGXFXAJNm7sY4B6yXrP6MCbqAbiSKxhE67nqZQV
 MP7QmJSS4yhZnHTGoqEgvewL21s488Yn1H5c1gtCeCD0ds2WjqimXujUt32JM7PW
@@ -63,6 +64,46 @@ tRw+PH2AuRJWZ48Dl2uFlZcrmYavRxx9oDKV3AIVthQRiRmkNh/UvO/Bh8XofyEa
 -----END PGP PUBLIC KEY BLOCK-----
 """
 ha_public_key_fingerprint = 'EC2412257ED36383F4371502ABC2BA1AA6572350'
+
+hpvs_public_key = """
+-----BEGIN PGP PUBLIC KEY BLOCK-----
+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
+=G7vX
+-----END PGP PUBLIC KEY BLOCK-----
+"""
+
+hpvs_public_key_fingerprint='1DBABBD982DE9AD923AE0C803E2979450925F95D'
 
 logger = logging.getLogger(__name__)
 
@@ -117,15 +158,21 @@ class ConfigCipher:
         keyid_email = keyid
         if not re.match(r'<.+@.+>', keyid) and email:
             keyid_email = keyid + ' <' + email + '>'
+        found = 0
         for key in gpg.list_keys():
             if 'uids' in key and keyid_email in key['uids']:
                 logger.debug('vendor_key: found={}'.format(json.dumps(key, indent=4)))
-                return key['fingerprint']
-        logger.debug('vendor_key: generating a key keyid={}'.format(keyid))
-        input_data = gpg.gen_key_input(key_type='RSA', key_length=4096, subkey_type='RSA', subkey_length=4096, expire_date=0, name_real=keyid, name_email=email)
-        vendor_key = gpg.gen_key(input_data)
-        vendor_key_fingerprint = str(vendor_key)
-        logger.debug('vendor_key: generated key={}'.format(vendor_key_fingerprint))
+                vendor_key_fingerprint = key['fingerprint']
+                found = found + 1
+        if found > 1:
+            logger.warning('vendor_key: {} keys found, using {}'.format(found, vendor_key_fingerprint))
+        elif found == 0:
+            logger.debug('vendor_key: generating a key keyid={}'.format(keyid))
+            input_data = gpg.gen_key_input(key_type='RSA', key_length=4096, subkey_type='RSA', subkey_length=4096, expire_date=0, name_real=keyid, name_email=email)
+            vendor_key = gpg.gen_key(input_data)
+            vendor_key_fingerprint = str(vendor_key)
+            logger.debug('vendor_key: generated key={}'.format(vendor_key_fingerprint))
+
         return vendor_key_fingerprint
 
     def import_ha_public_key(self):
@@ -143,6 +190,21 @@ class ConfigCipher:
         gpg.trust_keys(fingerprint, 'TRUST_ULTIMATE')
         return fingerprint
 
+    def import_hpvs_public_key(self):
+        gpg = self.gpg
+        for key in gpg.list_keys():
+            if 'fingerprint' in key and key['fingerprint'] == hpvs_public_key_fingerprint:
+                gpg.trust_keys(hpvs_public_key_fingerprint, 'TRUST_ULTIMATE')
+                return hpvs_public_key_fingerprint
+        import_result = gpg.import_keys(hpvs_public_key)
+        if import_result.count != 1:
+            logger.error('encrypt_config_json: failed importing HPVS public key')
+            return None
+        fingerprint = import_result.fingerprints[0]
+        logger.debug('encrypt_config_json: public key fingerprint={}'.format(fingerprint))
+        gpg.trust_keys(fingerprint, 'TRUST_ULTIMATE')
+        return fingerprint
+
     def encrypt_config_json(self, config_json, email=None, keyid='secure_build'):
         gpg = self.gpg
 
@@ -151,7 +213,7 @@ class ConfigCipher:
             logging.error('encrypt_config_json: failed obtaining a vendor key keyid={}'.format(keyid))
             return None
         logging.debug('encrypt_config_json: vendor_key_fingerprint={}'.format(vendor_key_fingerprint))
-        config_json['vendor_key'] = gpg.export_keys(keyid)
+        config_json['vendor_key'] = gpg.export_keys(vendor_key_fingerprint)
 
         logger.debug('encrypt_config_json: config_json={}'.format(json.dumps(config_json, indent=4)))
 
@@ -165,6 +227,18 @@ class ConfigCipher:
         encrypted_ascii_data = gpg.encrypt(json.dumps(config_json), fingerprint, sign=vendor_key_fingerprint, armor=True)
         if not encrypted_ascii_data.ok:
             logger.error('encrypt_config_json: failed encrypting config json status={}'.format(encrypted_ascii_data.status))
+            return None
+        logger.debug('ok={} status={}'.format(encrypted_ascii_data.ok, encrypted_ascii_data.status))
+        return str(encrypted_ascii_data)
+
+    def encrypt_env_variables(self, base64data):
+        gpg = self.gpg
+
+        logger.debug('encrypt_env_variables: key list={}'.format(json.dumps(gpg.list_keys(), indent=4)))
+
+        encrypted_ascii_data = gpg.encrypt(base64data, hpvs_public_key_fingerprint, armor=True)
+        if not encrypted_ascii_data.ok:
+            logger.error('encrypt_env_variables: failed encrypting config json status={}'.format(encrypted_ascii_data.status))
             return None
         logger.debug('ok={} status={}'.format(encrypted_ascii_data.ok, encrypted_ascii_data.status))
         return str(encrypted_ascii_data)
