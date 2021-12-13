@@ -133,7 +133,7 @@ As another example, if value of `DOCKER_REPO=de.icr.io`, then the value of `DOCK
      ```
   6. Run the following command to update the SBS instance (in the case of certificate expiration, you need not update the hostname):
   ```buildoutcfg
-  ibmcloud hpvs instance-update SBContainer --rd-path secure_build.asc -i 1.3.0.4 --hostname sbs.example.com -e CLIENT_CRT=... -e CLIENT_CA=... -e SERVER_CRT=... -e SERVER_KEY=..."{}
+  ibmcloud hpvs instance-update SBContainer --rd-path secure_build.asc -i 1.3.0.4 --hostname sbs.example.com -e CLIENT_CRT=... -e CLIENT_CA=... -e SERVER_CRT=... -e SERVER_KEY=...
   ```  
 
 Also see [Additional Build Parameters](additional-build-parameters.md).
@@ -585,7 +585,7 @@ Note: After the secret is updated, you cannot use a state image obtained using t
 
 6. Update the instance
 ```buildoutcfg
-ibmcloud hpvs instance-update SBContainer -i 1.3.0.4 --rd-path "registration.json.asc" --hostname="sbs.example.com" -e CLIENT_CRT=... -e CLIENT_CA=... -e SERVER_CRT=... -e SERVER_KEY=...
+ibmcloud hpvs instance-update SBContainer -i 1.3.0.4 --rd-path "secure_build.asc" --hostname="sbs.example.com" -e CLIENT_CRT=... -e CLIENT_CA=... -e SERVER_CRT=... -e SERVER_KEY=...
 ```
 
 Note:
