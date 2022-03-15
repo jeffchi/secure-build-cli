@@ -76,7 +76,7 @@ Where
 ```
 HOSTNAME - Hostname of the SBS server which will be used while generating certificates and communicating with the secure build server.
 CICD_PORT - port on which a build service is running (default: 443).
-IMAGE_TAG - image tag of the container image to be deployed as SBS server. Use "1.3.0.4" unless otherwise noted.
+IMAGE_TAG - image tag of the container image to be deployed as SBS server. Use "1.3.0.5" unless otherwise noted.
 GITHUB_KEY_FILE - Private key path to access your GitHub repo.
 GITHUB_URL - GitHub URL.
 GITHUB_BRANCH - GitHub branch name.
@@ -120,11 +120,11 @@ As another example, if value of `DOCKER_REPO=de.icr.io`, then the value of `DOCK
   2. Update the hostname in the `sbs-config.json` (in the case of certificate expiration, you need not update the hostname).
   3. Regenerate the certificate by running the commands
     ```buildoutcfg
-    ./build.py create-client-cert --env sbs-config.json"
+    ./build.py create-client-cert --env sbs-config.json
     ```
     and
     ```buildoutcfg
-    ./build.py create-server-cert --env sbs-config.json"
+    ./build.py create-server-cert --env sbs-config.json
     ```
   4. Update the `/etc/hosts` file with the new hostname (in the case of certificate expiration, you need not update the hostname).
   5. Run the following command to get the new certificate:
@@ -133,7 +133,7 @@ As another example, if value of `DOCKER_REPO=de.icr.io`, then the value of `DOCK
      ```
   6. Run the following command to update the SBS instance (in the case of certificate expiration, you need not update the hostname):
   ```buildoutcfg
-  ibmcloud hpvs instance-update SBContainer --rd-path secure_build.asc -i 1.3.0.4 --hostname sbs.example.com -e CLIENT_CRT=... -e CLIENT_CA=... -e SERVER_CRT=... -e SERVER_KEY=...
+  ibmcloud hpvs instance-update SBContainer --rd-path secure_build.asc -i 1.3.0.5 --hostname sbs.example.com -e CLIENT_CRT=... -e CLIENT_CA=... -e SERVER_CRT=... -e SERVER_KEY=...
   ```  
 
 Also see [Additional Build Parameters](additional-build-parameters.md).
@@ -198,13 +198,13 @@ Note: Update the IBM Cloud CLI if it is installed already.
 
 6. Create the SBS instance on cloud. You can copy and paste the output from `instance-env` command as command-line parameters for the `instance-create` command.
 ```buildoutcfg
-ibmcloud hpvs instance-create SBContainer lite-s dal13 --rd-path secure_build.asc -i 1.3.0.4 --hostname sbs.example.com -e CLIENT_CRT=... -e CLIENT_CA=... -e SERVER_CRT=... -e SERVER_KEY=...
+ibmcloud hpvs instance-create SBContainer lite-s dal13 --rd-path secure_build.asc -i 1.3.0.5 --hostname sbs.example.com -e CLIENT_CRT=... -e CLIENT_CA=... -e SERVER_CRT=... -e SERVER_KEY=...
 ```
 Where:  
 - SBContainer is the name of the SBS instance to be created.      
 - lite-s is the plan name.  
 - dal13 is the region name.  
-- 1.3.0.4 is the image tag of Secure Docker Build docker image.
+- 1.3.0.5 is the image tag of Secure Docker Build docker image.
 - hostname is the server hostname that was given in sbs-config.json.
 
 To know more details about which plan to use and which region to use, see [hpvs instance-create](https://cloud.ibm.com/docs/hpvs-cli-plugin?topic=hpvs-cli-plugin-hpvs_cli_plugin#create_instance).
@@ -560,6 +560,8 @@ Note: After the secret is updated, you cannot use a state image obtained using t
 
 ## Updating the Secure Build Server instance to the latest image
 
+You can skip steps 1 to 4, when updating from SBS version 1.3.0.4 to 1.3.0.5. 
+
 1. Export the state image as mentioned in the section [How to get the state image](README.md#how-to-get-the-state-image). This is to ensure that you have a backup.
 
 2. Modify the `sbs-config.json` file for 1.3.0.4 according to the following instructions:
@@ -585,7 +587,7 @@ Note: After the secret is updated, you cannot use a state image obtained using t
 
 6. Update the instance
 ```buildoutcfg
-ibmcloud hpvs instance-update SBContainer -i 1.3.0.4 --rd-path "secure_build.asc" --hostname="sbs.example.com" -e CLIENT_CRT=... -e CLIENT_CA=... -e SERVER_CRT=... -e SERVER_KEY=...
+ibmcloud hpvs instance-update SBContainer -i 1.3.0.5 --rd-path "secure_build.asc" --hostname="sbs.example.com" -e CLIENT_CRT=... -e CLIENT_CA=... -e SERVER_CRT=... -e SERVER_KEY=...
 ```
 
 Note:
@@ -613,7 +615,7 @@ Memory                2048 MiB
 Processors            1 vCPUs
 Image type            self-provided
 Image OS              self-defined
-Image name            de.icr.io/zaas-hpvsop-prod/secure-docker-build:1.3.0.4
+Image name            de.icr.io/zaas-hpvsop-prod/secure-docker-build:1.3.0.5
 Environment           CLIENT_CA=...
                       CLIENT_CRT=...
                       SERVER_CRT=...
