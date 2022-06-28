@@ -566,6 +566,28 @@ class Build:
             f.write(public_key_pem)
         return public_key_pem
 
+    def get_dct_publickey(self):
+        resp, status_code = self.request_api('get-config-json', requests.get, '/config-json', json_response=True)
+
+        if status_code != 201:
+            if status_code != -1:
+                logger.error(resp.decode('utf-8'))
+            return
+
+        if not 'public_key' in resp:
+            logger.fatal("get-dct-publickey response=" + json.dumps(resp, indent=4))
+            sys.exit(-1)
+
+        dct_public_key = resp['public_key']
+        repo_name = resp['repository_name'].replace("/","-")
+        if self.verbose > 0:
+            logger.info("get-dct-publickey response=" + dct_public_key)
+        dct_public_key_file = repo_name + 'dct-public.key'
+        with open(dct_public_key_file, 'w') as f:
+            f.write(dct_public_key)
+        logger.info("Downloaded DCT public key to file " + dct_public_key_file)
+        return dct_public_key
+
     def read_key(self, key_file):
         with open(os.path.expanduser(key_file), 'r') as f:
             data = f.read()  # .replace('\n', '\\n')
@@ -595,7 +617,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(prog='build.py')
     parser.add_argument("-v", "--verbose", action="count", default=0, help="increase verbosity")
     parser.add_argument("--version", action="version", version="%(prog)s v0.221", help="show version")
-    parser.add_argument("command", help="[init|update|build|clean|status|log|get-config-json|get-config-python|get-manifest|get-publickey|get-state-image|post-state-image|create-client-cert|create-server-cert|delete-certificates|instance-env]")
+    parser.add_argument("command", help="[init|update|build|clean|status|log|get-config-json|get-config-python|get-manifest|get-publickey|get-dct-publickey|get-state-image|post-state-image|create-client-cert|create-server-cert|delete-certificates|instance-env]")
     parser.add_argument("--github-key-file", help="github_key_file")
     parser.add_argument("--log", help="log_name")
     parser.add_argument("--loglevel", default='INFO', help="log level")
@@ -662,6 +684,8 @@ if __name__ == '__main__':
             build.verify_manifest(manifest_name, public_key_pem, args.verify_test)
     elif command == "get-publickey":
         build.get_publickey()
+    elif command == "get-dct-publickey":
+        build.get_dct_publickey()
     elif command == "get-state-image":
         build.get_state_image()
     elif command == "post-state-image":
