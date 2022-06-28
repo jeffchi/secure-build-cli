@@ -565,7 +565,7 @@ Note: After the secret is updated, you cannot use a state image obtained using t
 
 ## Updating the Secure Build Server instance to the latest image
 
-You can skip steps 1 to 4, when updating from SBS version 1.3.0.4 to .
+You can skip steps 1 to 4, when updating from SBS version 1.3.0.5 to 1.3.0.6
 
 1. Export the state image as mentioned in the section [How to get the state image](README.md#how-to-get-the-state-image). This is to ensure that you have a backup.
 
