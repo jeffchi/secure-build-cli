@@ -48,7 +48,7 @@ Create the `sbs-config.json` file in any location you choose on your local machi
 {
   "HOSTNAME": "sbs.example.com",
   "CICD_PORT": "443",
-  "IMAGE_TAG": "1.3.0.6",
+  "IMAGE_TAG": "",
   "GITHUB_KEY_FILE": "~/.ssh/id_rsa",
   "GITHUB_URL": "git@github.com:<git_user>/<git_repo>.git",
   "GITHUB_BRANCH": "master",
@@ -76,7 +76,7 @@ Where
 ```
 HOSTNAME - Hostname of the SBS server which will be used while generating certificates and communicating with the secure build server.
 CICD_PORT - port on which a build service is running (default: 443).
-IMAGE_TAG - image tag of the container image to be deployed as SBS server. Use "1.3.0.6" unless otherwise noted.
+IMAGE_TAG - image tag of the container image to be deployed as SBS server. Use "1.3.0.7" unless otherwise noted.
 GITHUB_KEY_FILE - Private key path to access your GitHub repo.
 GITHUB_URL - GitHub URL.
 GITHUB_BRANCH - GitHub branch name.
@@ -133,7 +133,7 @@ As another example, if value of `DOCKER_REPO=de.icr.io`, then the value of `DOCK
      ```
   6. Run the following command to update the SBS instance (in the case of certificate expiration, you need not update the hostname):
   ```buildoutcfg
-  ibmcloud hpvs instance-update SBContainer --rd-path secure_build.asc -i 1.3.0.6 --hostname sbs.example.com -e CLIENT_CRT=... -e CLIENT_CA=... -e SERVER_CRT=... -e SERVER_KEY=...
+  ibmcloud hpvs instance-update SBContainer --rd-path secure_build.asc -i 1.3.0.7 --hostname sbs.example.com -e CLIENT_CRT=... -e CLIENT_CA=... -e SERVER_CRT=... -e SERVER_KEY=...
   ```  
 
 Also see [Additional Build Parameters](additional-build-parameters.md).
@@ -198,13 +198,13 @@ Note: Update the IBM Cloud CLI if it is installed already.
 
 6. Create the SBS instance on cloud. You can copy and paste the output from `instance-env` command as command-line parameters for the `instance-create` command.
 ```buildoutcfg
-ibmcloud hpvs instance-create SBContainer lite-s dal13 --rd-path secure_build.asc -i 1.3.0.6 --hostname sbs.example.com -e CLIENT_CRT=... -e CLIENT_CA=... -e SERVER_CRT=... -e SERVER_KEY=...
+ibmcloud hpvs instance-create SBContainer lite-s dal13 --rd-path secure_build.asc -i 1.3.0.7 --hostname sbs.example.com -e CLIENT_CRT=... -e CLIENT_CA=... -e SERVER_CRT=... -e SERVER_KEY=...
 ```
 Where:  
 - SBContainer is the name of the SBS instance to be created.      
 - lite-s is the plan name.  
 - dal13 is the region name.  
-- 1.3.0.6 is the image tag of Secure Docker Build docker image.
+- 1.3.0.7 is the image tag of Secure Docker Build docker image.
 - hostname is the server hostname that was given in sbs-config.json.
 
 To know more details about which plan to use and which region to use, see [hpvs instance-create](https://cloud.ibm.com/docs/hpvs-cli-plugin?topic=hpvs-cli-plugin-hpvs_cli_plugin#create_instance).
@@ -274,7 +274,7 @@ When an error occurs, the `status` response shows the command that caused the er
 ```
 {
   ...
-    "status": "exiting due to a non-zero return value: 1, cmd: docker build --disable-content-trust=false -t docker.io/abhiramk/nginxapp:latest -f Dockerfile ."
+    "status": "exiting due to a non-zero return value: 1, cmd: docker build --disable-content-trust=false -t docker.io/<user_name>/nginxapp:latest -f Dockerfile ."
 }
 ```
 To stop a long-running build process, refer to [How to stop and clean up a build process](README.md#how-to-stop-and-clean-up-a-build-process).
@@ -352,7 +352,7 @@ This will store your manifest file to IBM Cloud Object Storage.
 ./build.py get-manifest --env <path>/sbs-config.json
 ```
 
-This will store your manifest file to current working directory, something similar to `manifest.docker.io.abhiramk.nginxapp.v1-d14cdc8.2021-02-04_13-25-52.512466.sig.tbz`.
+This will store your manifest file to current working directory, something similar to `manifest.docker.io.<user_name>.nginxapp.v1-d14cdc8.2021-02-04_13-25-52.512466.sig.tbz`.
 
 2. Verifying the integrity of the Manifest file
 ```buildoutcfg
@@ -363,14 +363,14 @@ This will store your manifest file to current working directory, something simil
 
 Untar by using the `tar` command.
 ```buildoutcfg
-tar -xvf manifest.docker.io.abhiramk.nginxapp.v1-d14cdc8.2021-02-04_13-25-52.512466.sig.tbz
-manifest.docker.io.abhiramk.nginxapp.v1-d14cdc8.2021-02-04_13-25-52.512466.tbz
-manifest.docker.io.abhiramk.nginxapp.v1-d14cdc8.2021-02-04_13-25-52.512466.sig
+tar -xvf manifest.docker.io.<user_name>.nginxapp.v1-d14cdc8.2021-02-04_13-25-52.512466.sig.tbz
+manifest.docker.io.<user_name>.nginxapp.v1-d14cdc8.2021-02-04_13-25-52.512466.tbz
+manifest.docker.io.<user_name>.nginxapp.v1-d14cdc8.2021-02-04_13-25-52.512466.sig
 ```
 
 Further untar to get the build materials.
 ```buildoutcfg
-tar -xvf manifest.docker.io.abhiramk.nginxapp.v1-d14cdc8.2021-02-04_13-25-52.512466.tbz
+tar -xvf manifest.docker.io.<user_name>.nginxapp.v1-d14cdc8.2021-02-04_13-25-52.512466.tbz
 ```
 
 You will see a data and git folder.
@@ -397,7 +397,7 @@ You need it to recover the signing key and additional SBS internal states to bui
 ```
 There will be an encrypted file which will be downloaded in your current directory, similar to this:
 ```buildoutcfg
-docker.io.prabhat54331.sbs22.s390x-v0.1-60fd72e.2020-10-21_07-20-08.516797
+docker.io.<user_name>.sbs22.s390x-v0.1-60fd72e.2020-10-21_07-20-08.516797
 ```
 
 2. You can also save the state image to IBM Cloud Object Storage (COS).
@@ -447,7 +447,7 @@ Complete the following steps:
 ```
 4. Post the state image.
 ```buildoutcfg
-./build.py post-state-image --state-image docker.io.prabhat54331.sbs22.s390x-v0.1-60fd72e.2020-10-21_07-20-08.516797 --env <path>/sbs-config.json
+./build.py post-state-image --state-image docker.io.<user_name>.sbs22.s390x-v0.1-60fd72e.2020-10-21_07-20-08.516797 --env <path>/sbs-config.json
 ```
 Use the `--state-image` option to specify the state image file you downloaded previously with the `get-state-image` command.
 
@@ -501,7 +501,7 @@ After the instance is up and running, you can see `Public IP address` in the ins
 
 7. Post the state image.
 ```buildoutcfg
-./build.py post-state-image --env <path>/sbs-config.json --name docker.io.prabhat54331.sbs22.s390x-v0.1-60fd72e.2020-10-21_07-20-08.516797 {--state-bucket-name <your_bucket_name>}
+./build.py post-state-image --env <path>/sbs-config.json --name docker.io.<user_name>.sbs22.s390x-v0.1-60fd72e.2020-10-21_07-20-08.516797 {--state-bucket-name <your_bucket_name>}
 ```
 Use the `--state-bucket-name` option, if you want to override the parameter in `sbs-config.json` or you don't have one in the file.
 Use the `--name` option to specifiy the name of the state image on COS, which is the same as the name of the meta data file you downloaded with the `get-state-image` command.
@@ -565,7 +565,7 @@ Note: After the secret is updated, you cannot use a state image obtained using t
 
 ## Updating the Secure Build Server instance to the latest image
 
-You can skip steps 1 to 4, when updating from SBS version 1.3.0.5 to 1.3.0.6
+You can skip steps 1 to 4, when updating from SBS version 1.3.0.6 to 1.3.0.7.
 
 1. Export the state image as mentioned in the section [How to get the state image](README.md#how-to-get-the-state-image). This is to ensure that you have a backup.
 
@@ -592,7 +592,7 @@ You can skip steps 1 to 4, when updating from SBS version 1.3.0.5 to 1.3.0.6
 
 6. Update the instance
 ```buildoutcfg
-ibmcloud hpvs instance-update SBContainer -i 1.3.0.6 --rd-path "secure_build.asc" --hostname="sbs.example.com" -e CLIENT_CRT=... -e CLIENT_CA=... -e SERVER_CRT=... -e SERVER_KEY=...
+ibmcloud hpvs instance-update SBContainer -i 1.3.0.7 --rd-path "secure_build.asc" --hostname="sbs.example.com" -e CLIENT_CRT=... -e CLIENT_CA=... -e SERVER_CRT=... -e SERVER_KEY=...
 ```
 
 Note:
@@ -620,7 +620,7 @@ Memory                2048 MiB
 Processors            1 vCPUs
 Image type            self-provided
 Image OS              self-defined
-Image name            de.icr.io/zaas-hpvsop-prod/secure-docker-build:1.3.0.6
+Image name            de.icr.io/zaas-hpvsop-prod/secure-docker-build:1.3.0.7
 Environment           CLIENT_CA=...
                       CLIENT_CRT=...
                       SERVER_CRT=...
