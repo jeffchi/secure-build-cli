@@ -67,6 +67,7 @@ ha_public_key_fingerprint = 'EC2412257ED36383F4371502ABC2BA1AA6572350'
 
 hpvs_public_key = """
 -----BEGIN PGP PUBLIC KEY BLOCK-----
+
 mQENBGOR6WYBCADRpJMuu+txnD7PdbnVLmR4h/+QwA76k80kwMU1YOI0g9+8YZkb
 Em4h+vEatXd8BkBgbxr6EhVtgpn/3Bw6EdeOduucNvVK/hfysTiK44AbEt8oio8D
 NAk0kYJwo5GX9pxb1K4FZDfaUowPewUvtvTZ3qt5+qq0j5DK9nNnmhelYhQFBatB
