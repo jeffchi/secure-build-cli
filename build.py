@@ -62,8 +62,11 @@ other_optional_parameters = {'SECRETS',
                              'DOCKER_CONTENT_TRUST_BASE',
                              'DOCKER_CONTENT_TRUST_BASE_SERVER',
                              'DOCKER_CONTENT_TRUST_PUSH_SERVER',
+                             'ICR_BASE_REPO',
+                             'ICR_BASE_REPO_PUBLIC_KEY',
                              'DOCKERFILE_PATH',
                              'DOCKER_BUILD_PATH',
+                             'ISV_SECRET',
                              'ENV_WHITELIST',
                              'EXIT_NONZERO'}
 additional_env_vars = {'RUNQ_ROOTDISK',
@@ -267,6 +270,12 @@ class Build:
         else:
             body["GITHUB_KEY"] = ""
 
+        
+        if 'icr_base_repo_public_key' in self.params and self.params['icr_base_repo_public_key'] != '':
+            body["BASE_REPO_PUBLIC_KEY"] = self.read_key(self.params['icr_base_repo_public_key'])
+        else:
+            body["BASE_REPO_PUBLIC_KEY"] = ""
+
         if 'new_secret' in self.params and update:
             if not 'secret' in self.params:
                 logger.error('init/update: SECRET has not been defined')
@@ -410,6 +419,8 @@ class Build:
 
         logger.info('a python config file has been written to {}.'.format(repo_regfile_name+'.py'))
 
+    
+    
     def config_json(self):
         self.less_verbose(delta=2)
         resp, status_code = self.request_api('get-config-json', requests.get, '/config-json', json_response=True)
@@ -426,6 +437,7 @@ class Build:
         if 'repo_id' in self.params and self.params['repo_id'] != '':
             repo_regfile_name = self.params['repo_id']
 
+
         config = resp
         if not 'cap_add' in config or not 'ALL' in config['cap_add']:
             config['cap_add'] = ['ALL']
@@ -435,6 +447,30 @@ class Build:
             if not env_var in config['envs_whitelist']:
                 config['envs_whitelist'].append(env_var)
 
+    #to add IV secret to .enc file if isv flag is set
+        if args.isv_secrets:
+            if 'isv_secret' in self.params and len(self.params['isv_secret'])!=0:
+                isv=self.params['isv_secret']
+                isv_secrets={}
+                key_value_pair={}
+                for key,value in isv.items():
+                    if (len(key) != 0 and len(value) != 0):
+                        key_value_pair.update({key:value})
+                        isv_secrets.update(key_value_pair)
+                    else:
+                        if (len(key) == 0 or len(value) == 0):
+                            logger.fatal('Provide valid values of secrets in form of key and value pair')
+                            sys.exit(-1)
+
+                secrets_json = {'secrets':{'mount_path': '/isv_secrets/secrets.json', 'secrets_list': isv_secrets}}
+                config.update(secrets_json)
+                   
+            else:
+                logger.fatal('No values are provided under ISV_SECRET')
+                sys.exit(-1)
+
+
+        
         cc = config_cipher.ConfigCipher(args.loglevel)
         email = self.params['email'] if 'email' in self.params else ''
         keyid = self.params['key_id'] if 'key_id' in self.params else 'secure-build'
@@ -447,6 +483,9 @@ class Build:
             f.write(encrypted_config_json)
 
         logger.info('a json config file has been written to {}.'.format(repo_regfile_name+'.enc'))
+
+
+
 
     def instance_env(self):
         env_vars = {}
@@ -566,7 +605,7 @@ class Build:
             f.write(public_key_pem)
         return public_key_pem
 
-    def get_dct_publickey(self):
+    def get_signed_image_publickey(self):
         resp, status_code = self.request_api('get-config-json', requests.get, '/config-json', json_response=True)
 
         if status_code != 201:
@@ -575,18 +614,35 @@ class Build:
             return
 
         if not 'public_key' in resp:
-            logger.fatal("get-dct-publickey response=" + json.dumps(resp, indent=4))
+            logger.fatal("get-signed-image-publickey response=" + json.dumps(resp, indent=4))
             sys.exit(-1)
 
-        dct_public_key = resp['public_key']
+        signed_image_public_key = resp['public_key']
         repo_name = resp['repository_name'].replace("/","-")
         if self.verbose > 0:
-            logger.info("get-dct-publickey response=" + dct_public_key)
-        dct_public_key_file = repo_name + 'dct-public.key'
-        with open(dct_public_key_file, 'w') as f:
-            f.write(dct_public_key)
-        logger.info("Downloaded DCT public key to file " + dct_public_key_file)
-        return dct_public_key
+            logger.info("get-signed-image-publickey response=" + signed_image_public_key)
+        signed_image_public_key_file = repo_name + '-public.key'
+        with open(signed_image_public_key_file, 'w') as f:
+            f.write(signed_image_public_key)
+        logger.info("Downloaded signed image public key to file " + signed_image_public_key_file)
+        return signed_image_public_key
+
+    def get_digest(self):
+        self.less_verbose(delta=2)
+        resp, status_code = self.request_api(
+            'get-digest', requests.get, '/imagedigest', json_response=True)
+        self.more_verbose(delta=2)
+
+        if status_code != 201:
+            logger.error(resp.decode('utf-8'))
+            return
+
+        if self.verbose > 1:
+            logger.info('image_digest={}'.format(json.dumps(resp, indent=4)))
+
+        digest_value = os.popen('echo ' + str(resp) + '| tr -d "[]"')
+        print('Digest value of the built image:', digest_value.read())
+        digest_value.close()
 
     def read_key(self, key_file):
         with open(os.path.expanduser(key_file), 'r') as f:
@@ -617,7 +673,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(prog='build.py')
     parser.add_argument("-v", "--verbose", action="count", default=0, help="increase verbosity")
     parser.add_argument("--version", action="version", version="%(prog)s v0.221", help="show version")
-    parser.add_argument("command", help="[init|update|build|clean|status|log|get-config-json|get-config-python|get-manifest|get-publickey|get-dct-publickey|get-state-image|post-state-image|create-client-cert|create-server-cert|delete-certificates|instance-env]")
+    parser.add_argument("command", help="[init|update|build|clean|status|log|get-config-json|get-config-python|get-manifest|get-publickey|get-signed-image-publickey|get-digest|get-state-image|post-state-image|create-client-cert|create-server-cert|delete-certificates|instance-env]")
     parser.add_argument("--github-key-file", help="github_key_file")
     parser.add_argument("--log", help="log_name")
     parser.add_argument("--loglevel", default='INFO', help="log level")
@@ -642,6 +698,7 @@ if __name__ == '__main__':
     parser.add_argument("--rd-path", help="encrypted registration file")
     parser.add_argument("--key-id", help="vendor key id")
     parser.add_argument("--email", help="vendor key user email")
+    parser.add_argument("--isv-secrets",action="count", default=False, help="If --isvsecret flag is true, isv secrets will be set to registration file. By default flag is false so no isv secrets will be set.")
     args = parser.parse_args()
 
     if args.verbose > 1:
@@ -684,8 +741,10 @@ if __name__ == '__main__':
             build.verify_manifest(manifest_name, public_key_pem, args.verify_test)
     elif command == "get-publickey":
         build.get_publickey()
-    elif command == "get-dct-publickey":
-        build.get_dct_publickey()
+    elif command == "get-signed-image-publickey":
+        build.get_signed_image_publickey()
+    elif command == "get-digest":
+        build.get_digest()
     elif command == "get-state-image":
         build.get_state_image()
     elif command == "post-state-image":
@@ -704,5 +763,3 @@ if __name__ == '__main__':
         build.instance_env()
     else:
         logger.fatal("unknown command: " + command)
-
-
