@@ -52,6 +52,7 @@ Create the `sbs-config.json` file in any location you choose on your local machi
   "GITHUB_KEY_FILE": "~/.ssh/id_rsa",
   "GITHUB_URL": "git@github.com:<git_user>/<git_repo>.git",
   "GITHUB_BRANCH": "master",
+  "GITHUB_RECURSE_SUBMODULES": "True",
   "CONTAINER_NAME": "SBContainer",
   "REPO_ID": "sbs",
   "DOCKER_REPO": "<docker_namespace>/<docker_repository_name>",
@@ -86,6 +87,7 @@ IMAGE_TAG - image tag of the container image to be deployed as SBS server. Use "
 GITHUB_KEY_FILE - Private key path to access your GitHub repo.
 GITHUB_URL - GitHub URL.
 GITHUB_BRANCH - GitHub branch name.
+GITHUB_RECURSE_SUBMODULES - If you want to clone submodules, then add this parameter and make the value true. 
 CONTAINER_NAME - Name of the Hyper Protect Virtual Servers instance which you want to create on cloud. This name can be different from the name which you use on cloud. The name is used as a part of a certificate file name. You can choose any valid string as a file name.
 REPO_ID - This is the ID which is used as a prefix of the registration definition file for a newly built image.
 DOCKER_REPO - DockerHub repository.
@@ -665,7 +667,7 @@ Created               2021-12-06
    ```buildoutcfg
    ./build.py update --env <path>/sbs-config.json
    ```
-   
+
 ## License
 
 [Apache 2.0](https://github.com/ibm-hyper-protect/secure-build-cli/blob/main/LICENSE)
