@@ -37,7 +37,7 @@ logger = logging.getLogger(__name__)
 
 # These are the parameter names of the required parameters
 # TODO: check if we need REPO_ID
-parameter_names = {'REPO_ID', 'DOCKER_REPO', 'DOCKER_USER', 'DOCKER_PASSWORD', 'GITHUB_URL', 'SECRET', 'IMAGE_TAG'}
+parameter_names = {'RUNTIME_TYPE','DOCKER_REPO', 'DOCKER_USER', 'DOCKER_PASSWORD', 'GITHUB_URL', 'SECRET', 'IMAGE_TAG'}
 manifest_parameters = {'MANIFEST_BUCKET_NAME',
                        'MANIFEST_COS_API_KEY_ID',
                        'MANIFEST_COS_RESOURCE_CRN',
@@ -99,22 +99,22 @@ class Build:
                      }
         filter = JsonFilter(json_keys)
         logger.addFilter(filter)
-
+     
         self.params = internal_params
         self.verbose = args.verbose
 
-        if args.env != None:
-            self.parameter_file = os.path.expanduser(args.env)
+        if args.config_json_file != None:
+            self.parameter_file = os.path.expanduser(args.config_json_file)
             if not os.path.isfile(self.parameter_file):
                 logger.warning('parameter file ' + self.parameter_file + ' is not found')
                 sys.exit(-1)
         elif os.path.isfile(default_parameter_file):
             if args.verbose > 1:
-                if args.env == None:
+                if args.config_json_file == None:
                     logger.warning('A --env option was not specified, using a default file: ' + default_parameter_file)
                 else:
                     logger.warning(
-                        'A parameter file, ' + args.env + ', does not exist, using a default file: ' + default_parameter_file)
+                        'A parameter file, ' + args.config_json_file + ', does not exist, using a default file: ' + default_parameter_file)
             self.parameter_file = default_parameter_file
         else:
             self.parameter_file = ''
@@ -136,6 +136,9 @@ class Build:
             if args.verbose > 1:
                 logger.info("parameter_file:" + self.parameter_file)
             updateparamfile = False
+            if not 'RUNTIME_TYPE' in params:
+                params['RUNTIME_TYPE'] = "vpc"
+                updateparamfile = True
             if not 'UUID' in params:
                 params['UUID'] = str(uuid.uuid4())
                 updateparamfile = True
@@ -283,6 +286,16 @@ class Build:
             if self.verbose > 1:
                 logger.info('renewing a secret')
             self.params['new_secret'] = base64.b64encode(os.urandom(128)).decode('UTF-8')
+      
+
+        if self.params['runtime_type'] != '' and update:
+            path = self.client_crt_key + '.d'
+            filename = "sbsRuntime_Type"
+            with open(os.path.join(path, filename), 'r') as fp:
+                runtime_content = fp.read()
+                if self.params['runtime_type'] != runtime_content:
+                    logger.error("Update is not supported for RUNTIME_TYPE")
+                    sys.exit(-1)
 
         for name in parameter_names:
             if name.lower() in self.params:
@@ -292,9 +305,26 @@ class Build:
                 if name == 'IMAGE_TAG':
                     name = 'BUILD_' + name
                 body[name] = value
+                if name == 'RUNTIME_TYPE':
+                   if value == "vpc" and 'repo_id' in self.params:
+                    logger.fatal("REPO_ID is not supported parameter in vpc")
+                    sys.exit(-1)
+                   elif value =="classic" and 'repo_id' not in self.params:
+                    logger.fatal('undefined parameter REPO_ID')
+                    sys.exit(-1)
+                   elif value =="classic" and 'repo_id' in self.params:
+                    body['REPO_ID'] = self.params['repo_id']
+                   else:
+                    body[name] = value
             else:
                 logger.fatal('undefined parameter ' + name)
                 sys.exit(-1)
+
+        # storing the runtime_type as a file
+        path = self.client_crt_key + '.d'
+        filename = "sbsRuntime_Type"
+        with open(os.path.join(path, filename), 'w') as fp:
+            fp.write(self.params['runtime_type'])
 
         for parameters in (manifest_parameters, state_parameters, other_optional_parameters):
             for name in parameters:
@@ -370,7 +400,11 @@ class Build:
         body['secret'] = self.params['secret']
 
         if 'state_image' in self.params and 'state_bucket_name' in self.params:
-            logger.error('specify either state_image or state_bucket_name, but not both')
+           if 'name' in self.params:
+            logger.error('When cloud object storage(COS) is enabled state-image parameter is not required')
+            return ''
+           else:
+            logger.error('When cloud object storage(COS) is enabled name parameter is required')
             return ''
 
         if 'state_image' in self.params:
@@ -384,7 +418,7 @@ class Build:
         elif 'state_bucket_name' in self.params:
             body['state_bucket_name'] = self.params['state_bucket_name']
             if not 'name' in self.params:
-                logger.error('missing name')
+                logger.error('When cloud object storage(COS) is enabled name parameter is required')
                 return ''
             body['name'] = self.params['name']
 
@@ -402,90 +436,93 @@ class Build:
             logger.info(line)
 
     def config_python(self):
-        self.less_verbose(delta=2)
-        resp, status_code = self.request_api('get-config-python', requests.get, '/config-python', json_response=False)
-        self.more_verbose(delta=2)
+        if self.params['runtime_type'] == 'classic':
+            self.less_verbose(delta=2)
+            resp, status_code = self.request_api(
+                'get-config-python', requests.get, '/config-python', json_response=False)
+            self.more_verbose(delta=2)
 
-        if status_code != 201:
-            logger.error(resp.decode('utf-8'))
-            return
+            if status_code != 201:
+                logger.error(resp.decode('utf-8'))
+                return
 
-        repo_regfile_name = 'repo_regfile'
-        if 'repo_id' in self.params and self.params['repo_id'] != '':
-            repo_regfile_name = self.params['repo_id']
+            repo_regfile_name = 'repo_regfile'
+            if 'repo_id' in self.params and self.params['repo_id'] != '':
+                repo_regfile_name = self.params['repo_id']
 
-        with open(repo_regfile_name + '.py', 'w') as f:
-            f.write(resp.decode('utf-8'))
+            with open(repo_regfile_name + '.py', 'w') as f:
+                f.write(resp.decode('utf-8'))
 
-        logger.info('a python config file has been written to {}.'.format(repo_regfile_name+'.py'))
-
-    
+            logger.info('a python config file has been written to {}.'.format(
+                repo_regfile_name+'.py'))
+        else:
+            logger.fatal("get-config-python is not supported for vpc")
+            sys.exit(-1)
     
     def config_json(self):
-        self.less_verbose(delta=2)
-        resp, status_code = self.request_api('get-config-json', requests.get, '/config-json', json_response=True)
-        self.more_verbose(delta=2)
+        if self.params['runtime_type'] == 'classic':
+            self.less_verbose(delta=2)
+            resp, status_code = self.request_api('get-config-json', requests.get, '/config-json', json_response=True)
+            self.more_verbose(delta=2)
 
-        if status_code != 201:
-            if status_code != -1:
-                logger.error(resp.decode('utf-8'))
-            return
+            if status_code != 201:
+                if status_code != -1:
+                    logger.error(resp.decode('utf-8'))
+                return
 
-        if self.verbose > 1:
-            logger.info('config_json={}'.format(json.dumps(resp, indent=4)))
-        repo_regfile_name = 'repo_regfile'
-        if 'repo_id' in self.params and self.params['repo_id'] != '':
-            repo_regfile_name = self.params['repo_id']
+            if self.verbose > 1:
+                logger.info('config_json={}'.format(json.dumps(resp, indent=4)))
+            repo_regfile_name = 'repo_regfile'
+            if 'repo_id' in self.params and self.params['repo_id'] != '':
+                repo_regfile_name = self.params['repo_id']
 
 
-        config = resp
-        if not 'cap_add' in config or not 'ALL' in config['cap_add']:
-            config['cap_add'] = ['ALL']
-        for env_var in additional_env_vars:
-            if not 'envs_whitelist' in config:
-                config['envs_whitelist'] = []
-            if not env_var in config['envs_whitelist']:
-                config['envs_whitelist'].append(env_var)
+            config = resp
+            if not 'cap_add' in config or not 'ALL' in config['cap_add']:
+                config['cap_add'] = ['ALL']
+            for env_var in additional_env_vars:
+                if not 'envs_whitelist' in config:
+                    config['envs_whitelist'] = []
+                if not env_var in config['envs_whitelist']:
+                    config['envs_whitelist'].append(env_var)
 
     #to add IV secret to .enc file if isv flag is set
-        if args.isv_secrets:
-            if 'isv_secret' in self.params and len(self.params['isv_secret'])!=0:
-                isv=self.params['isv_secret']
-                isv_secrets={}
-                key_value_pair={}
-                for key,value in isv.items():
-                    if (len(key) != 0 and len(value) != 0):
-                        key_value_pair.update({key:value})
-                        isv_secrets.update(key_value_pair)
-                    else:
-                        if (len(key) == 0 or len(value) == 0):
-                            logger.fatal('Provide valid values of secrets in form of key and value pair')
-                            sys.exit(-1)
+            if args.isv_secrets:
+                if 'isv_secret' in self.params and len(self.params['isv_secret'])!=0:
+                    isv=self.params['isv_secret']
+                    isv_secrets={}
+                    key_value_pair={}
+                    for key,value in isv.items():
+                        if (len(key) != 0 and len(value) != 0):
+                            key_value_pair.update({key:value})
+                            isv_secrets.update(key_value_pair)
+                        else:
+                            if (len(key) == 0 or len(value) == 0):
+                                logger.fatal('Provide valid values of secrets in form of key and value pair')
+                                sys.exit(-1)
 
-                secrets_json = {'secrets':{'mount_path': '/isv_secrets/secrets.json', 'secrets_list': isv_secrets}}
-                config.update(secrets_json)
+                    secrets_json = {'secrets':{'mount_path': '/isv_secrets/secrets.json', 'secrets_list': isv_secrets}}
+                    config.update(secrets_json)
                    
-            else:
-                logger.fatal('No values are provided under ISV_SECRET')
-                sys.exit(-1)
+                else:
+                    logger.fatal('No values are provided under ISV_SECRET')
+                    sys.exit(-1)
+       
+            cc = config_cipher.ConfigCipher(args.loglevel)
+            email = self.params['email'] if 'email' in self.params else ''
+            keyid = self.params['key_id'] if 'key_id' in self.params else 'secure-build'
+            encrypted_config_json = cc.encrypt_config_json(config, email=email, keyid=keyid)
+            if encrypted_config_json == None:
+                logger.error('an encrypted json config file was not written.')
+                return
 
+            with open(repo_regfile_name+'.enc', 'w') as f:
+                f.write(encrypted_config_json)
 
-        
-        cc = config_cipher.ConfigCipher(args.loglevel)
-        email = self.params['email'] if 'email' in self.params else ''
-        keyid = self.params['key_id'] if 'key_id' in self.params else 'secure-build'
-        encrypted_config_json = cc.encrypt_config_json(config, email=email, keyid=keyid)
-        if encrypted_config_json == None:
-            logger.error('an encrypted json config file was not written.')
-            return
-
-        with open(repo_regfile_name+'.enc', 'w') as f:
-            f.write(encrypted_config_json)
-
-        logger.info('a json config file has been written to {}.'.format(repo_regfile_name+'.enc'))
-
-
-
+            logger.info('a json config file has been written to {}.'.format(repo_regfile_name+'.enc'))
+        else:
+            logger.fatal("get-config-json is not supported for vpc")
+            sys.exit(-1)
 
     def instance_env(self):
         env_vars = {}
@@ -504,9 +541,14 @@ class Build:
         env_vars['CLIENT_CA'] = base64.b64encode(ca.encode('utf-8')).decode('utf-8')
         env_vars['SERVER_CRT'] = base64.b64encode(server_cert.encode('utf-8')).decode('utf-8')
         env_vars['SERVER_KEY'] = base64.b64encode(ascii_value_server_key.encode('utf-8')).decode('utf-8')
-        env = ' '.join(['-e '+key+'='+value for key, value in env_vars.items()])
-        logger.info('\n\n ****** Copy below environment variables and use in instance-create command. ****** \n\n')
-        print(env)
+        if self.params['runtime_type'] == 'classic':
+            env = ' '.join(['-e '+key+'='+value for key, value in env_vars.items()])
+            logger.info('\n\n ****** Copy below environment variables and use in instance-create command. ****** \n\n')
+            print(env)
+        else:
+            env = ''.join([key+': "'+value + '"\n' for key, value in env_vars.items()])
+            logger.info('\n\n ****** Copy below environment variables and use in env contract as environment variables. ****** \n\n')
+            print(env)
         return env
 
         logger.info('a json config file has been written to {}.'.format(repo_regfile_name + '.json'))
@@ -640,9 +682,7 @@ class Build:
         if self.verbose > 1:
             logger.info('image_digest={}'.format(json.dumps(resp, indent=4)))
 
-        digest_value = os.popen('echo ' + str(resp) + '| tr -d "[]"')
-        print('Digest value of the built image:', digest_value.read())
-        digest_value.close()
+        print('Digest value of the built image:', str(resp))
 
     def read_key(self, key_file):
         with open(os.path.expanduser(key_file), 'r') as f:
@@ -671,6 +711,7 @@ class Build:
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser(prog='build.py')
+    parser.add_argument("--env", dest='config_json_file', help="json file to set environment parameters (default: env.json)", required= True)
     parser.add_argument("-v", "--verbose", action="count", default=0, help="increase verbosity")
     parser.add_argument("--version", action="version", version="%(prog)s v0.221", help="show version")
     parser.add_argument("command", help="[init|update|build|clean|status|log|get-config-json|get-config-python|get-manifest|get-publickey|get-signed-image-publickey|get-digest|get-state-image|post-state-image|create-client-cert|create-server-cert|delete-certificates|instance-env]")
@@ -679,7 +720,6 @@ if __name__ == '__main__':
     parser.add_argument("--loglevel", default='INFO', help="log level")
     parser.add_argument("--verify-manifest", action="count", default=0, help="verify manifest")
     parser.add_argument("--verify-test", action="count", default=0, help="test manifest verification")
-    parser.add_argument("--env", help="json file to set environment parameters (default: env.json)")
     parser.add_argument("--client-crt-key", help="a certificate file for client authentication")
     parser.add_argument("--build-name", help="specify a non-latest build_name for manifest operations (get-manifest, and get-publickey)")
     parser.add_argument("--container-name", help="CICD container name")
