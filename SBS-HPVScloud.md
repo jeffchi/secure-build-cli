@@ -11,8 +11,8 @@ Optionally, it can push the manifest to Cloud Object Storage, or the developer c
 The following is a list of hardware or software requirements:
 - Linux management server from where you can run the build CLI tool (Linux workstation or VM).
   - x86 architecture (recommended 2 CPUs/4GB memory or more)
-  - Ubuntu 18.04 or 16.04 (64 bit)
-  - Python 3.6 (Python 2.x is not supported)
+  - Ubuntu 20.04 or 18.04 (64 bit)
+  - Python 3.8 (Python 2.x is not supported)
 - Access to GitHub for hosting the source code.
 - Dockerfile (everything that you need to build your container image).
 - Access to IBM Cloud Registry or DockerHub.
@@ -49,6 +49,7 @@ Create the `sbs-config.json` file in any location you choose on your local machi
   "GITHUB_KEY_FILE": "~/.ssh/id_rsa",
   "GITHUB_URL": "git@github.com:<git_user>/<git_repo>.git",
   "GITHUB_BRANCH": "master",
+  "GITHUB_RECURSE_SUBMODULES": "True",
   "CONTAINER_NAME": "SBContainer",
   "REPO_ID": "sbs",
   "DOCKER_REPO": "<docker_namespace>/<docker_repository_name>",
@@ -80,10 +81,11 @@ Where
 HOSTNAME - Hostname of the SBS server which will be used while generating certificates and communicating with the secure build server.
 RUNTIME_TYPE - set to classic to leverage [IBM Cloud Hyper Protect Virtual Servers](https://cloud.ibm.com/catalog/services/hyper-protect-virtual-server)
 CICD_PORT - port on which a build service is running (default: 443).
-IMAGE_TAG - image tag of the container image to be deployed as SBS server. Use "1.3.0.8" unless otherwise noted.
+IMAGE_TAG - image tag of the container image to be deployed as SBS server. Use "1.3.0.9" unless otherwise noted.
 GITHUB_KEY_FILE - Private key path to access your GitHub repo.
 GITHUB_URL - GitHub URL.
 GITHUB_BRANCH - GitHub branch name.
+GITHUB_RECURSE_SUBMODULES - If you want to clone submodules, then add this parameter and make the value true.
 CONTAINER_NAME - Name of the Hyper Protect Virtual Servers instance which you want to create on cloud. This name can be different from the name which you use on cloud. The name is used as a part of a certificate file name. You can choose any valid string as a file name.
 REPO_ID - This is the ID which is used as a prefix of the registration definition file for a newly built image.
 DOCKER_REPO - DockerHub repository.
@@ -103,31 +105,30 @@ ICR_BASE_REPO_PUBLIC_KEY - public key with which the base image used in docker f
 ISV_SECRET - Use to provide the ISV secrets as a key and value pair. The secrets are added in the ``/isv_secrets/secrets.json` file within the IBM Hyper Protect Virtual server.
 ```
 Note:
-- If the base image used in Docker file is Red Hat signed on IBM Cloud Container Registry, you must provide the 'ICR_BASE_REPO', and 'ICR_BASE_REPO_PUBLIC_KEY' parameters. The following is an example for these two values:
-   - "ICR_BASE_REPO": `"<region>.icr.io/<repo name>/<image name>:<tag>"`
-   - "ICR_BASE_REPO_PUBLIC_KEY" : `"<path to the public key>"`
-
 - If you use IBM Cloud Registry instead of DockerHub registry, then you must use the following parameters:
+  ```buildoutcfg
+  "DOCKER_BASE_SERVER": "<domain_name>",
+  "DOCKER_PUSH_SERVER": "<domain_name>",
+  "DOCKER_USER": "iamapikey",
+  "DOCKER_PASSWORD": "<ibm_cloud_apikey>"
+  "DOCKER_RO_USER": "iamapikey",
+  "DOCKER_RO_PASSWORD": "<ibm_cloud_apikey>",
+  "DOCKER_CONTENT_TRUST_PUSH_SERVER": "https://<domain_name>"
+  ```
 
-```buildoutcfg
-"DOCKER_BASE_SERVER": "<domain_name>",
-"DOCKER_PUSH_SERVER": "<domain_name>",
-"DOCKER_USER": "iamapikey",
-"DOCKER_PASSWORD": "<ibm_cloud_apikey>"
-"DOCKER_RO_USER": "iamapikey",
-"DOCKER_RO_PASSWORD": "<ibm_cloud_apikey>",
-"DOCKER_CONTENT_TRUST_PUSH_SERVER": "https://<domain_name>"
-```
+  - The `<domain_name>` specifies the location of IBM Cloud Container Registry (e.g. `us.icr.io`). Select the domain name for one of [available regions](https://cloud.ibm.com/docs/Registry?topic=Registry-registry_overview#registry_regions).
+  - If you are using the IBM Cloud Registry server, and you specified the `<domain_name>` as `us.icr.io`, then specify `us.icr.io` as the value for `DOCKER_CONTENT_TRUST_PUSH_SERVER`. As another example, if value of `DOCKER_REPO=de.icr.io`, then the value of `DOCKER_CONTENT_TRUST_PUSH_SERVER` should be `de.icr.io`. To know more about IBM Cloud registry, see [Getting started with IBM Cloud Container Registry](https://cloud.ibm.com/docs/Registry?topic=Registry-getting-started).
 
-- The `<domain_name>` specifies the location of IBM Cloud Container Registry (e.g. `us.icr.io`). Select the domain name for one of [avilable regions](https://cloud.ibm.com/docs/Registry?topic=Registry-registry_overview#registry_regions).
-If you are using the IBM Cloud Registry notary server, and you specified the `<domain_name>` as `us.icr.io`, then specify `https://notary.us.icr.io` as the value for `DOCKER_CONTENT_TRUST_PUSH_SERVER`.
-As another example, if value of `DOCKER_REPO=de.icr.io`, then the value of `DOCKER_CONTENT_TRUST_PUSH_SERVER` should be `https://notary.de.icr.io`. To know more about IBM Cloud registry, see [Getting started with IBM Cloud Container Registry](https://cloud.ibm.com/docs/Registry?topic=Registry-getting-started).
+- If the base image used in Docker file is signed, configure "DOCKER_CONTENT_TRUST_BASE" with a value "True". And configure "DOCKER_BASE_USER" and "DOCKER_BASE_PASSWORD" with the credentials.
+  - If the base image is on Docker Hub and DCT signed, "DOCKER_CONTENT_TRUST_BASE_SERVER" is set with the notary server URL https://notary.docker.io.
+  - If the base image is on IBM Cloud Container Registry and Red Hat signed, "DOCKER_CONTENT_TRUST_BASE_SERVER" is set with <domain_name>.
+  - If the base image is on IBM Cloud Container Registry and Red Hat signed, you must provide the 'ICR_BASE_REPO', and 'ICR_BASE_REPO_PUBLIC_KEY' parameters. The following is an example for these two values:
+    - "ICR_BASE_REPO": `"<region>.icr.io/<repo name>/<image name>:<tag>"`
+    - "ICR_BASE_REPO_PUBLIC_KEY" : `"<path to the public key>"`
 
-- If the base image is in Docker Hub, then you must configure "DOCKER_CONTENT_TRUST_BASE" with a value "True", "DOCKER_CONTENT_TRUST_BASE_SERVER" is set with the notary server URL, and configure "DOCKER_BASE_USER" and "DOCKER_BASE_PASSWORD" with the credentials."
-
-- If the base image used in Docker file is Red Hat signed on IBM Cloud Container Registry, provide the path to the public key with which it is signed in the 'ICR_BASE_REPO_PUBLIC_KEY' parameter, and the base image used in the 'ICR_BASE_REPO' parameter. The following two parameters should also be set with the values as shown:
-   - "DOCKER_CONTENT_TRUST_BASE": "True"
-   - "DOCKER_CONTENT_TRUST_BASE_SERVER": `"<region>.icr.io"`
+- If the base image used in Docker file is unsigned, set "DOCKER_CONTENT_TRUST_BASE" to "false". Also, you don't have to set "DOCKER_CONTENT_TRUST_BASE_SERVER".
+   - If the base image is on IBM Cloud Container Registry, the "DOCKER_BASE_USER" and "DOCKER_BASE_PASSWORD" must be set.
+   - If the base image is on Docker Hub and is private, you must set the "DOCKER_BASE_USER" and "DOCKER_BASE_PASSWORD". Otherwise, you don't have to set the "DOCKER_BASE_USER" and "DOCKER_BASE_PASSWORD" parameters.
 
 - To update the hostname, or to update the instance with a new certificate when the old certificate expires, complete the following steps:
   1. Backup the `sbs-config.json` file, and edit the file to remove the "UUID" parameter.
@@ -146,15 +147,9 @@ As another example, if value of `DOCKER_REPO=de.icr.io`, then the value of `DOCK
      ./build.py instance-env --env sbs-config.json
      ```
   6. Run the following command to update the SBS instance (in the case of certificate expiration, you need not update the hostname):
-  ```buildoutcfg
-  ibmcloud hpvs instance-update SBContainer --rd-path secure_build.asc -i 1.3.0.8 --hostname sbs.example.com -e CLIENT_CRT=... -e CLIENT_CA=... -e SERVER_CRT=... -e SERVER_KEY=...
-  ```
-  
-- When the base image is unsigned, set "DOCKER_CONTENT_TRUST_BASE" to "false". Also, you don't have to set the following parameters:   
-  - "DOCKER_CONTENT_TRUST_BASE_SERVER": "",
-  - "DOCKER_BASE_USER": "",
-  - "DOCKER_BASE_PASSWORD": "",
-
+     ```buildoutcfg
+     ibmcloud hpvs instance-update SBContainer --rd-path secure_build.asc -i 1.3.0.9 --hostname sbs.example.com -e CLIENT_CRT=... -e CLIENT_CA=... -e SERVER_CRT=... -e SERVER_KEY=...
+     ```
 
 Also see [Additional Build Parameters](additional-build-parameters.md).
 
@@ -218,13 +213,13 @@ Note: Update the IBM Cloud CLI if it is installed already.
 
 6. Create the SBS instance on cloud. You can copy and paste the output from `instance-env` command as command-line parameters for the `instance-create` command.
 ```buildoutcfg
-ibmcloud hpvs instance-create SBContainer lite-s dal13 --rd-path secure_build.asc -i 1.3.0.8 --hostname sbs.example.com -e CLIENT_CRT=... -e CLIENT_CA=... -e SERVER_CRT=... -e SERVER_KEY=...
+ibmcloud hpvs instance-create SBContainer lite-s dal13 --rd-path secure_build.asc -i 1.3.0.9 --hostname sbs.example.com -e CLIENT_CRT=... -e CLIENT_CA=... -e SERVER_CRT=... -e SERVER_KEY=...
 ```
 Where:
 - SBContainer is the name of the SBS instance to be created.
 - lite-s is the plan name.
 - dal13 is the region name.
-- 1.3.0.8 is the image tag of Secure Docker Build docker image.
+- 1.3.0.9 is the image tag of Secure Docker Build docker image.
 - hostname is the server hostname that was given in sbs-config.json.
 
 To know more details about which plan to use and which region to use, see [hpvs instance-create](https://cloud.ibm.com/docs/hpvs-cli-plugin?topic=hpvs-cli-plugin-hpvs_cli_plugin#create_instance).
@@ -297,7 +292,7 @@ When an error occurs, the `status` response shows the command that caused the er
     "status": "exiting due to a non-zero return value: 1, cmd: docker build --disable-content-trust=false -t docker.io/<user_name>/nginxapp:latest -f Dockerfile ."
 }
 ```
-To stop a long-running build process, refer to [How to stop and clean up a build process](SBS-HPVScloud.md#how-to-stop-and-clean-up-a-build-process).
+To stop a long-running build process, see [How to stop and clean up a build process](SBS-HPVScloud.md#how-to-stop-and-clean-up-a-build-process).
 
 ## How to deploy the image that is built by using SBS
 Complete the following steps:
@@ -593,9 +588,9 @@ Note: After the secret is updated, you cannot use a state image obtained using t
 
 ## Updating the Secure Build Server instance to the latest image
 
-You can skip steps 1 to 4, when updating from SBS version 1.3.0.7 to 1.3.0.8.
+You can skip steps 1 to 4, when updating from SBS version 1.3.0.8 to 1.3.0.9.
 
-1. Export the state image as mentioned in the section [How to get the state image](README.md#how-to-get-the-state-image). This is to ensure that you have a backup.
+1. Export the state image as mentioned in the section [How to get the state image](SBS-HPVScloud.md#how-to-get-the-state-image). This is to ensure that you have a backup.
 
 2. Modify the `sbs-config.json` file for 1.3.0.4 according to the following instructions:
    1. Delete the `UUID` parameter.
@@ -620,7 +615,7 @@ You can skip steps 1 to 4, when updating from SBS version 1.3.0.7 to 1.3.0.8.
 
 6. Update the instance
 ```buildoutcfg
-ibmcloud hpvs instance-update SBContainer -i 1.3.0.8 --rd-path "secure_build.asc" --hostname="sbs.example.com" -e CLIENT_CRT=... -e CLIENT_CA=... -e SERVER_CRT=... -e SERVER_KEY=...
+ibmcloud hpvs instance-update SBContainer -i 1.3.0.9 --rd-path "secure_build.asc" --hostname="sbs.example.com" -e CLIENT_CRT=... -e CLIENT_CA=... -e SERVER_CRT=... -e SERVER_KEY=...
 ```
 
 Note:
@@ -648,7 +643,7 @@ Memory                2048 MiB
 Processors            1 vCPUs
 Image type            self-provided
 Image OS              self-defined
-Image name            de.icr.io/zaas-hpvsop-prod/secure-docker-build:1.3.0.8
+Image name            de.icr.io/zaas-hpvsop-prod/secure-docker-build:1.3.0.9
 Environment           CLIENT_CA=...
                       CLIENT_CRT=...
                       SERVER_CRT=...
@@ -659,7 +654,7 @@ Created               2021-12-06
 ```
 
 8. Update the following parameters of the `sbs-config.json` configuration file:
-   - "build_image_tag": "1.3.0.8"
+   - "build_image_tag": "1.3.0.9"
    - If the base image used in Docker file is Red Hat signed on IBM Cloud Container Registry, you must provide the 'ICR_BASE_REPO', and 'ICR_BASE_REPO_PUBLIC_KEY' parameters.
    - If the built image is pushed to IBM Cloud Container Registry, set "DOCKER_CONTENT_TRUST_PUSH_SERVER": "https://<domain_name>".
 
@@ -668,4 +663,4 @@ Created               2021-12-06
    ./build.py update --env <path>/sbs-config.json
    ```
 
-### Note: To bring up the SBS Container on HPCR environment follow this document: [ SBS Deployment on HPCR ](SBS-Gen2.md)
+### Note: To bring up the SBS Container on IBM Cloud Hyper Protect Virtual Servers for VPC (HPVS for VPC), follow the instructions in [this](SBS-Gen2.md) document.  

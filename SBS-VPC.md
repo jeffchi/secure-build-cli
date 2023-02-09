@@ -15,14 +15,14 @@ Optionally, it can push the manifest to IBM Cloud Object Storage, or the develop
 Ensure that you meet the following hardware or software requirements:
 - Linux management server from where you can run the build CLI tool (Linux workstation or VM).
   - x86 architecture (recommended 2 CPUs/4GB memory or more)
-  - Ubuntu 18.04 or 16.04 (64 bit)
-  - Python 3.6 (Python 2.x is not supported)
+  - Ubuntu 20.04 or 18.04 (64 bit)
+  - Python 3.8 (Python 2.x is not supported)
 - Access to GitHub, for hosting the source code.
 - Dockerfile (everything that you need to build your container image).
 - Access to IBM Cloud Registry or DockerHub.
 - (Optional) Access to IBM Cloud Object Storage (COS) Service.
 - Access to IBM Hyper Protect Virtual Servers for VPC.
-- Encrypted workload contract file of Secure Build Server (TO_UPDATE_FILE_NAME) from [IBM Cloud Docs](TO_UPDATE_WORKLOADCONTRACT_LINK).
+- Get the encrypted workload section of the contract file of Secure Build Server from [here](https://cloud.ibm.com/docs/vpc?topic=vpc-about-hpsb#hpvs_hpsb), step 2.
 
 
 ## Install the Secure Build CLI
@@ -99,37 +99,35 @@ ICR_BASE_REPO - Base Image used in dockerfile if it is present in ICR
 ICR_BASE_REPO_PUBLIC_KEY - public key with which the base image used in docker file (ICR_BASE_REPO) is signed
 ```
 Note:
-- If the base image used in Docker file is on IBM Cloud Container Registry and Red Hat signed, you must provide the 'ICR_BASE_REPO', and 'ICR_BASE_REPO_PUBLIC_KEY' parameters. The following is an example for these two values:
-   - "ICR_BASE_REPO": `"<region>.icr.io/<repo name>/<image name>:<tag>"`
-   - "ICR_BASE_REPO_PUBLIC_KEY" : `"<path to the public key>"`
-
 - If you use IBM Cloud Registry instead of DockerHub registry, then you must use the following parameters:
+  ```buildoutcfg
+  "DOCKER_BASE_SERVER": "<domain_name>",
+  "DOCKER_PUSH_SERVER": "<domain_name>",
+  "DOCKER_USER": "iamapikey",
+  "DOCKER_PASSWORD": "<ibm_cloud_apikey>"
+  "DOCKER_RO_USER": "iamapikey",
+  "DOCKER_RO_PASSWORD": "<ibm_cloud_apikey>",
+  "DOCKER_CONTENT_TRUST_PUSH_SERVER": "https://<domain_name>"
+  ```
 
-```buildoutcfg
-"DOCKER_BASE_SERVER": "<domain_name>",
-"DOCKER_PUSH_SERVER": "<domain_name>",
-"DOCKER_USER": "iamapikey",
-"DOCKER_PASSWORD": "<ibm_cloud_apikey>"
-"DOCKER_RO_USER": "iamapikey",
-"DOCKER_RO_PASSWORD": "<ibm_cloud_apikey>",
-"DOCKER_CONTENT_TRUST_PUSH_SERVER": "https://<domain_name>"
-```
+  - The `<domain_name>` specifies the location of IBM Cloud Container Registry (e.g. `us.icr.io`). Select the domain name for one of [available regions](https://cloud.ibm.com/docs/Registry?topic=Registry-registry_overview#registry_regions).
+  - If you are using the IBM Cloud Registry server, and you specified the `<domain_name>` as `us.icr.io`, then specify `us.icr.io` as the value for `DOCKER_CONTENT_TRUST_PUSH_SERVER`. As another example, if value of `DOCKER_REPO=de.icr.io`, then the value of `DOCKER_CONTENT_TRUST_PUSH_SERVER` should be `de.icr.io`. To know more about IBM Cloud registry, see [Getting started with IBM Cloud Container Registry](https://cloud.ibm.com/docs/Registry?topic=Registry-getting-started).
 
-- The `<domain_name>` specifies the location of IBM Cloud Container Registry (example: `us.icr.io`). Select the domain name for one of [avilable regions](https://cloud.ibm.com/docs/Registry?topic=Registry-registry_overview#registry_regions).
+- If the base image used in Docker file is signed, configure "DOCKER_CONTENT_TRUST_BASE" with a value "True". And configure "DOCKER_BASE_USER" and "DOCKER_BASE_PASSWORD" with the credentials.
+  - If the base image is on Docker Hub and DCT signed, "DOCKER_CONTENT_TRUST_BASE_SERVER" is set with the notary server URL https://notary.docker.io.
+  - If the base image is on IBM Cloud Container Registry and Red Hat signed, "DOCKER_CONTENT_TRUST_BASE_SERVER" is set with <domain_name>.
+  - If the base image is on IBM Cloud Container Registry and Red Hat signed, you must provide the 'ICR_BASE_REPO', and 'ICR_BASE_REPO_PUBLIC_KEY' parameters. The following is an example for these two values:
+    - "ICR_BASE_REPO": `"<region>.icr.io/<repo name>/<image name>:<tag>"`
+    - "ICR_BASE_REPO_PUBLIC_KEY" : `"<path to the public key>"`
 
-If you are using the IBM Cloud Registry server, and you specified the `<domain_name>` as `us.icr.io`, then specify `https://us.icr.io` as the value for `DOCKER_CONTENT_TRUST_PUSH_SERVER`.
-As another example, if value of `DOCKER_REPO=de.icr.io`, then the value of `DOCKER_CONTENT_TRUST_PUSH_SERVER` should be `https://de.icr.io`. To know more about IBM Cloud registry, see [Getting started with IBM Cloud Container Registry](https://cloud.ibm.com/docs/Registry?topic=Registry-getting-started).
+- If the base image used in Docker file is unsigned, set "DOCKER_CONTENT_TRUST_BASE" to "false". Also, you don't have to set "DOCKER_CONTENT_TRUST_BASE_SERVER".
+   - If the base image is on IBM Cloud Container Registry, the "DOCKER_BASE_USER" and "DOCKER_BASE_PASSWORD" must be set.
+   - If the base image is on Docker Hub and is private, you must set the "DOCKER_BASE_USER" and "DOCKER_BASE_PASSWORD". Otherwise, you don't have to set the "DOCKER_BASE_USER" and "DOCKER_BASE_PASSWORD" parameters.
 
-- If the base image is in Docker Hub, then you must configure "DOCKER_CONTENT_TRUST_BASE" with a value "True", "DOCKER_CONTENT_TRUST_BASE_SERVER" is set with the notary server URL, and configure "DOCKER_BASE_USER" and "DOCKER_BASE_PASSWORD" with the credentials."
+- To update the instance with a new certificate when the old certificate expires, complete the following steps:
+  1. Take a snapshot of the data volume of the instance, by following [these](https://cloud.ibm.com/docs/vpc?topic=vpc-snapshots-vpc-create&interface=ui) instructions.
 
-- If the base image used in Docker file is Red Hat signed on IBM Cloud Container Registry, provide the path to the public key with which it is signed in the 'ICR_BASE_REPO_PUBLIC_KEY' parameter, and the base image used in the 'ICR_BASE_REPO' parameter. The following two parameters should also be set with the values as shown:
-   - "DOCKER_CONTENT_TRUST_BASE": "True"
-   - "DOCKER_CONTENT_TRUST_BASE_SERVER": `"<region>.icr.io"`
-
-- To update the hostname, or to update the instance with a new certificate when the old certificate expires, complete the following steps:
-  1. Take a snapshot of the data volume of the instance , follow this for more details : [Taking snapshot of Data Volume](https://cloud.ibm.com/docs/vpc?topic=vpc-snapshots-vpc-create&interface=ui)
-  2. Update the hostname in the sbs-config.json (in the case of certificate expiration, you need not update the hostname).
-  3. Generate the new certificates by following the commands
+  2. Generate the new certificates by following the commands
     ```
     ./build.py create-client-cert --env sbs-config.json
     ```
@@ -137,20 +135,13 @@ As another example, if value of `DOCKER_REPO=de.icr.io`, then the value of `DOCK
     ```
     ./build.py create-server-cert --env sbs-config.json
     ```
-  4. Update the /etc/hosts file with the new hostname (in the case of certificate expiration, you need not update the hostname).
-  5. Run the following command to get the new certificate:
+  3. Run the following command to get the new certificate:
      ```
      ./build.py instance-env --env sbs-config.json
      ```
-  6. Generate a new contract for SBS by using the above certificates [Contract](SBS-VPC.md#the-env-section-of-the-contract-for-sbs-looks-like)
+  4. Generate a new contract for SBS by using the above certificates. For more information, see [ENV section of the contract](SBS-VPC.md#an-example-of-the-env-section-of-the-contract).
 
-  7. Create a new SBS container using the above snapshot as a data volume [Bringing up HPCR container ](https://cloud.ibm.com/docs/vpc?topic=vpc-creating-virtual-servers&interface=ui)
-
-- When the base image is unsigned, set "DOCKER_CONTENT_TRUST_BASE" to "false". Also, you don't have to set the following parameters:
-  - "DOCKER_CONTENT_TRUST_BASE_SERVER": "",
-  - "DOCKER_BASE_USER": "",
-  - "DOCKER_BASE_PASSWORD": "",
-
+  5. Create a new SBS container using the above snapshot as a data volume. For more information, see [Creating virtual server instances](https://cloud.ibm.com/docs/vpc?topic=vpc-creating-virtual-servers&interface=ui).
 
 Also see [Additional Build Parameters](additional-build-parameters.md).
 
@@ -227,15 +218,15 @@ env: |
     SERVER_KEY: LS0tLS1CRUdJTiBQR1AgTUVTU0FHRS0tLS0tCgpoUUVNQTJ0VkVob1VkT2cvQVFnQWpRMFBuVGp3VklsZCtKY2pCSXNIRVAxNjMxcXQyd2szNHV4ZjkrZUJjaXRwCi8yZ0RJY01kSDU0MHZ6T0NBeG96RWh6bDJDTmw1S2xVbk1DdWtXTHFoTmRoNTVtanIvK1E2TzRNdkREeXhaKysKRUhhS29lVGduYmZlWVZacXBNUGdqU04wVmgrTHNDNG5QQ2xQYzg1SEJVZXFDSmlZcWpkMSs0L1NtMmtpUy8yRQpCaWxTV1BoN0h2Y1N6THVTYklxTTFi......................
 ```
 
-5. To prepare the env section of the contract, see [How to prepare the ENV section](https://cloud.ibm.com/docs/vpc?topic=vpc-about-contract_se#hpcr_contract_env)
+5. To prepare the env section of the contract, see [How to prepare the ENV section](https://cloud.ibm.com/docs/vpc?topic=vpc-about-contract_se#hpcr_contract_env).
 
 6. The `env` section of the contract must be encrypted. For more information, see [Encrypting the ENV Contents](https://cloud.ibm.com/docs/vpc?topic=vpc-about-contract_se#hpcr_contract_encrypt_env).
 
 **Note:** It is recommend that you encrypt the `env` section of the contract.
 
-7. You can get the encrypted workload contract from [here](/docs/vpc?topic=vpc-about-hpsb#hpsb-procedure).
+7. You can get the encrypted workload section of the contract from [here](https://cloud.ibm.com/docs/vpc?topic=vpc-about-hpsb#hpvs_hpsb), step 2.
 
-8. Combine the encrypted `env contract` and the `encrypted workload` contract and add the contents to the `user-data.yaml` file that is used for deployment.
+8. Combine the `encrypted env` section and the `encrypted workload` section and add the contents to the `user-data.yaml` file that is used for deployment.
 
 9. After you complete preparing the contract that is used for bring up the SBS Container on Hyper Protect Virtual Servers for VPC, follow [these instructions](https://cloud.ibm.com/docs/vpc?topic=vpc-creating-virtual-servers&interface=ui) to create the Hyper Protect Virtual Servers for VPC instance.
 
@@ -244,6 +235,7 @@ env: |
 ```
 Example: 169.XX.XXX.XXX sbs.example.com
 ```
+**Note:** Enable security groups in Hyper Protect Virtual Servers for VPC, which should accept port 443 in inbound rules.
 
 
 ## How to build image by using SBS
@@ -321,13 +313,13 @@ services:
   sample:
     image: docker.io/<namespace>/sbsfinal@sha256:72e9976c7693140bbea85.............
 ```
-2. Create a archive file for the above docker-compose file [ For more details : [Preparing docker-compose file](https://cloud.ibm.com/docs/vpc?topic=vpc-about-contract_se#step3) ] and generate both workload, env section of the contract and bring up the container on HPCR environment.
 
-3. For the images that are built by SBS are DCT signed to obtain the public key run the below command, for more details: [Image subsection](https://cloud.ibm.com/docs/vpc?topic=vpc-about-contract_se#hpcr_contract_images)
+2. For the images that are built by SBS and are DCT signed, run the following command to obtain the public key. For more information, see [Image subsection](https://cloud.ibm.com/docs/vpc?topic=vpc-about-contract_se#hpcr_contract_images).
 ```
 ./build.py get-signed-image-publickey --env <path>/sbs-config.json
-
 ```
+
+3. Create a archive file for the above docker-compose file. For more details, see [Preparing docker-compose file](https://cloud.ibm.com/docs/vpc?topic=vpc-about-contract_se#step3) and generate both the `workload`, and `env` sections of the contract and bring up the container on Hyper Protect Virtual Servers for VPC. For more information about the generating the contract, see [About the contract](https://cloud.ibm.com/docs/vpc?topic=vpc-about-contract_se).
 
 
 ## Manifest file
@@ -391,11 +383,6 @@ You will see a data and git folder.
 - The data directory provides the `build.json` and `build.log` files which contain the build status and the build log, respectively.
 - The git directory contains the snapshot of the cloned git repository of the source code on the SBS instance when the build was completed.
 
-## How to extract Public Key Used for Signing Container Image inside SBS
-```buildoutcfg
-./build.py get-signed-image-publickey --env <path>/sbs-config.json
-```
-After you run this command, the <repo_name>'public.key' template file is created, which contains the public key that is used to sign the container image.
 
 ## State image
 The state image contains the private signing key, which is generated when a built image is pushed to a container registry for the first time. It is encrypted by using two SECRETS. One is generated by `build.py` and stored in your `sbs-config.json`. The other one is included in the SBS image.

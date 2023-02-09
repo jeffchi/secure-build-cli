@@ -289,7 +289,10 @@ class Build:
       
 
         if self.params['runtime_type'] != '' and update:
-            path = self.client_crt_key + '.d'
+            if client_certificate.is_client_using_own_keys == False:
+                path = self.client_crt_key + '.d'
+            else:
+                path =  self.params['certpath'] 
             filename = "sbsRuntime_Type"
             with open(os.path.join(path, filename), 'r') as fp:
                 runtime_content = fp.read()
@@ -321,7 +324,11 @@ class Build:
                 sys.exit(-1)
 
         # storing the runtime_type as a file
-        path = self.client_crt_key + '.d'
+        if client_certificate.is_client_using_own_keys == False:
+            path = self.client_crt_key + '.d'
+        else:
+            path =  self.params['certpath'] 
+
         filename = "sbsRuntime_Type"
         with open(os.path.join(path, filename), 'w') as fp:
             fp.write(self.params['runtime_type'])
