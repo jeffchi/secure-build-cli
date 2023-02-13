@@ -8,6 +8,7 @@
 # US Government Users Restricted Rights - Use, duplication or
 # disclosure restricted by GSA ADP Schedule Contract with IBM Corp
 #
+
 import sys, os, logging, shutil
 from OpenSSL import crypto
 from cicd.openssl import gen_ca, gen_csr, sign_csr, sign_server_csr, getSANValue
@@ -25,8 +26,17 @@ class ClientCertificate:
             self.params['default_client_crt_key'] = True
 
         # store all cert paths
+        global is_client_using_own_keys
+        is_client_using_own_keys= False
         self.client_crt_key = './' + self.params['client_crt_key']
-        self.cert_dir = self.client_crt_key + '.d'
+        if not 'certpath' in self.params:
+            self.cert_dir = self.client_crt_key + '.d'
+        else:
+            split_certpath = str.split(self.params['certpath'], '/')
+            certpath_dir="/".join(split_certpath[:-1])
+            self.params['certpath']=certpath_dir
+            self.cert_dir='./'  + self.params['certpath']
+            is_client_using_own_keys=True
 
         # set up default file paths if not specificed through a config json file or command-line parameters
         if not 'capath' in self.params:

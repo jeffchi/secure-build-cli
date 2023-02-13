@@ -103,5 +103,6 @@ class StringFilter(logging.Filter):
 
     def redact(self, msg):
         for key in self._stringstobefiltered:
-            msg = re.sub(re.escape(key), "*******", msg)
+            if len(key) != 0:
+                msg = re.sub(re.escape(key), "*******", msg)
         return msg
