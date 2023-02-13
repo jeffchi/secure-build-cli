@@ -1,4 +1,4 @@
-The following diagram illustrates a high level structure of SBS, which is provisioned by an administrator by using the [IBM Cloud CLI](https://cloud.ibm.com/docs/cli?topic=hpvs-cli-plugin-hpvs_cli_plugin). This document describes how a developer can interact with the server by using the `build.py` script. A developer prepares the source code of an application with Dockerfile, in a source code repository such as GitHub. The build server pulls the source code, builds a container image by using the Dockerfile, signs it, and pushes it to a container registry, such as Docker Hub. During the build process, it also creates a manifest file and signs it.
+The following diagram illustrates a high level structure of SBS, which is provisioned by an administrator by using the [IBM Cloud CLI](https://cloud.ibm.com/docs/cli?topic=cli-hpvs_cli_plugin). This document describes how a developer can interact with the server by using the `build.py` script. A developer prepares the source code of an application with Dockerfile, in a source code repository such as GitHub. The build server pulls the source code, builds a container image by using the Dockerfile, signs it, and pushes it to a container registry, such as Docker Hub. During the build process, it also creates a manifest file and signs it.
 
 Optionally, it can push the manifest to Cloud Object Storage, or the developer can download it on a local file system. The build server can also export and import its state as a single file, which includes signing keys of the image and manifest, with build parameters. When exported, the state is encrypted in such a way that the developer or IBM cannot decrypt the state image outside the enclave. It can be decrypted only inside the enclave. The encrypted state image can be pushed to Cloud Object Storage, or the developer can download it on a local file system.
 
@@ -18,7 +18,7 @@ The following is a list of hardware or software requirements:
 - Access to IBM Cloud Registry or DockerHub.
 - (Optional) Access to IBM Cloud Object Storage (COS) Service.
 - Access to IBM Hyper Protect Virtual Servers.
-- Registration definition file of Secure Build Server (secure_build.asc) from [IBM Cloud Docs](https://cloud.ibm.com/docs/hp-virtual-servers?topic=hp-virtual-servers-imagebuild).
+- Registration definition file of Secure Build Server (secure_build.asc) from [step 2](https://cloud.ibm.com/docs/hp-virtual-servers?topic=hp-virtual-servers-imagebuild#deploysecurebuild).
 
 
 ## Install the Secure Build CLI
@@ -655,6 +655,7 @@ Created               2021-12-06
 
 8. Update the following parameters of the `sbs-config.json` configuration file:
    - "build_image_tag": "1.3.0.9"
+   - "RUNTIME_TYPE": "classic"
    - If the base image used in Docker file is Red Hat signed on IBM Cloud Container Registry, you must provide the 'ICR_BASE_REPO', and 'ICR_BASE_REPO_PUBLIC_KEY' parameters.
    - If the built image is pushed to IBM Cloud Container Registry, set "DOCKER_CONTENT_TRUST_PUSH_SERVER": "https://<domain_name>".
 
@@ -663,4 +664,4 @@ Created               2021-12-06
    ./build.py update --env <path>/sbs-config.json
    ```
 
-### Note: To bring up the SBS Container on IBM Cloud Hyper Protect Virtual Servers for VPC (HPVS for VPC), follow the instructions in [this](SBS-Gen2.md) document.  
+### Note: To bring up the SBS Container on IBM Cloud Hyper Protect Virtual Servers for VPC (HPVS for VPC), follow the instructions in [this](SBS-VPC.md) document.  

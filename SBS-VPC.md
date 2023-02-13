@@ -22,7 +22,7 @@ Ensure that you meet the following hardware or software requirements:
 - Access to IBM Cloud Registry or DockerHub.
 - (Optional) Access to IBM Cloud Object Storage (COS) Service.
 - Access to IBM Hyper Protect Virtual Servers for VPC.
-- Get the encrypted workload section of the contract file of Secure Build Server from [here](https://cloud.ibm.com/docs/vpc?topic=vpc-about-hpsb#hpvs_hpsb), step 2.
+- Get the encrypted workload section of the contract file of Secure Build Server from [step 2](https://cloud.ibm.com/docs/vpc?topic=vpc-about-hpsb#hpvs_hpsb).
 
 
 ## Install the Secure Build CLI
@@ -224,7 +224,7 @@ env: |
 
 **Note:** It is recommend that you encrypt the `env` section of the contract.
 
-7. You can get the encrypted workload section of the contract from [here](https://cloud.ibm.com/docs/vpc?topic=vpc-about-hpsb#hpvs_hpsb), step 2.
+7. You can get the encrypted workload section of the contract from [step 2](https://cloud.ibm.com/docs/vpc?topic=vpc-about-hpsb#hpvs_hpsb).
 
 8. Combine the `encrypted env` section and the `encrypted workload` section and add the contents to the `user-data.yaml` file that is used for deployment.
 
@@ -314,12 +314,12 @@ services:
     image: docker.io/<namespace>/sbsfinal@sha256:72e9976c7693140bbea85.............
 ```
 
-2. For the images that are built by SBS and are DCT signed, run the following command to obtain the public key. For more information, see [Image subsection](https://cloud.ibm.com/docs/vpc?topic=vpc-about-contract_se#hpcr_contract_images).
+2. For the images that are built by SBS and are DCT signed, run the following command to obtain the public key. For more information, see [Images subsection](https://cloud.ibm.com/docs/vpc?topic=vpc-about-contract_se#hpcr_contract_images).
 ```
 ./build.py get-signed-image-publickey --env <path>/sbs-config.json
 ```
 
-3. Create a archive file for the above docker-compose file. For more details, see [Preparing docker-compose file](https://cloud.ibm.com/docs/vpc?topic=vpc-about-contract_se#step3) and generate both the `workload`, and `env` sections of the contract and bring up the container on Hyper Protect Virtual Servers for VPC. For more information about the generating the contract, see [About the contract](https://cloud.ibm.com/docs/vpc?topic=vpc-about-contract_se).
+3. Create a archive file for the above docker-compose file. For more details, see [Preparing the docker-compose file](https://cloud.ibm.com/docs/vpc?topic=vpc-about-contract_se#step3) and generate both the `workload`, and `env` sections of the contract and bring up the container on Hyper Protect Virtual Servers for VPC. For more information about the generating the contract, see [About the contract](https://cloud.ibm.com/docs/vpc?topic=vpc-about-contract_se).
 
 
 ## Manifest file

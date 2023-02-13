@@ -217,6 +217,17 @@ class Build:
 
         # self.cos = Cos(self.params)
 
+    def create_runtimetype_file(self):
+        # storing the runtime_type as a file
+        if client_certificate.is_client_using_own_keys == False:
+            path = self.client_crt_key + '.d'
+        else:
+            path = self.params['certpath']
+
+        filename = "sbsRuntime_Type"
+        with open(os.path.join(path, filename), 'w') as fp:
+            fp.write(self.params['runtime_type'])
+    
     def cicd_socket_address(self):
         cicd_host = self.ssc_host
 
@@ -287,19 +298,25 @@ class Build:
                 logger.info('renewing a secret')
             self.params['new_secret'] = base64.b64encode(os.urandom(128)).decode('UTF-8')
       
-
         if self.params['runtime_type'] != '' and update:
+            # Creating runtime_type file if it does not exist
             if client_certificate.is_client_using_own_keys == False:
                 path = self.client_crt_key + '.d'
+                runtime_type_file = path + '/' + 'sbsRuntime_Type'
             else:
-                path =  self.params['certpath'] 
-            filename = "sbsRuntime_Type"
-            with open(os.path.join(path, filename), 'r') as fp:
-                runtime_content = fp.read()
+                path = self.params['certpath']
+                runtime_type_file = path + '/' + 'sbsRuntime_Type'
+            if not os.path.exists(runtime_type_file):
+                build.create_runtimetype_file()
+            
+            else:
+                with open(os.path.join(path, 'sbsRuntime_Type'), 'r') as fp:
+                    runtime_content = fp.read()
+
                 if self.params['runtime_type'] != runtime_content:
                     logger.error("Update is not supported for RUNTIME_TYPE")
                     sys.exit(-1)
-
+        
         for name in parameter_names:
             if name.lower() in self.params:
                 # IMAGE_TAG is the one for a secure build service image
@@ -324,14 +341,7 @@ class Build:
                 sys.exit(-1)
 
         # storing the runtime_type as a file
-        if client_certificate.is_client_using_own_keys == False:
-            path = self.client_crt_key + '.d'
-        else:
-            path =  self.params['certpath'] 
-
-        filename = "sbsRuntime_Type"
-        with open(os.path.join(path, filename), 'w') as fp:
-            fp.write(self.params['runtime_type'])
+        build.create_runtimetype_file()
 
         for parameters in (manifest_parameters, state_parameters, other_optional_parameters):
             for name in parameters:
@@ -408,10 +418,10 @@ class Build:
 
         if 'state_image' in self.params and 'state_bucket_name' in self.params:
            if 'name' in self.params:
-            logger.error('When cloud object storage(COS) is enabled state-image parameter is not required')
+            logger.error('When cloud object storage(COS) is enabled, state-image parameter is not required')
             return ''
            else:
-            logger.error('When cloud object storage(COS) is enabled name parameter is required')
+            logger.error('When cloud object storage(COS) is enabled, name parameter is required')
             return ''
 
         if 'state_image' in self.params:
@@ -425,7 +435,7 @@ class Build:
         elif 'state_bucket_name' in self.params:
             body['state_bucket_name'] = self.params['state_bucket_name']
             if not 'name' in self.params:
-                logger.error('When cloud object storage(COS) is enabled name parameter is required')
+                logger.error('When cloud object storage(COS) is enabled, name parameter is required')
                 return ''
             body['name'] = self.params['name']
 
