@@ -115,8 +115,8 @@ Note:
 
 - If the base image used in Docker file is signed, configure "DOCKER_CONTENT_TRUST_BASE" with a value "True". And configure "DOCKER_BASE_USER" and "DOCKER_BASE_PASSWORD" with the credentials.
   - If the base image is on Docker Hub and DCT signed, "DOCKER_CONTENT_TRUST_BASE_SERVER" is set with the notary server URL https://notary.docker.io.
-  - If the base image is on IBM Cloud Container Registry and Red Hat signed, "DOCKER_CONTENT_TRUST_BASE_SERVER" is set with <domain_name>.
-  - If the base image is on IBM Cloud Container Registry and Red Hat signed, you must provide the 'ICR_BASE_REPO', and 'ICR_BASE_REPO_PUBLIC_KEY' parameters. The following is an example for these two values:
+  - If the base image is on IBM Cloud Container Registry and Red Hat Simple Signed, "DOCKER_CONTENT_TRUST_BASE_SERVER" is set with <domain_name>.
+  - If the base image is on IBM Cloud Container Registry and Red Hat Simple Signed, you must provide the 'ICR_BASE_REPO', and 'ICR_BASE_REPO_PUBLIC_KEY' parameters. The following is an example for these two values:
     - "ICR_BASE_REPO": `"<region>.icr.io/<repo name>/<image name>:<tag>"`
     - "ICR_BASE_REPO_PUBLIC_KEY" : `"<path to the public key>"`
 
