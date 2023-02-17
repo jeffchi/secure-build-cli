@@ -53,7 +53,7 @@ Create the `sbs-config.json` file in any location that you choose on your local 
   "CONTAINER_NAME": "SBContainer",
   "GITHUB_KEY_FILE": "~/.ssh/id_rsa",
   "GITHUB_URL": "git@github.com:<git_user>/<git_repo>.git",
-  "GITHUB_BRANCH": "master",
+  "GITHUB_BRANCH": "main",
   "DOCKER_REPO": "<docker_namespace>/<docker_repository_name>",
   "DOCKER_USER": "<docker_user>",
   "DOCKER_PASSWORD": "<docker_password>",

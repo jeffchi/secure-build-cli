@@ -48,7 +48,7 @@ Create the `sbs-config.json` file in any location you choose on your local machi
   "IMAGE_TAG": "",
   "GITHUB_KEY_FILE": "~/.ssh/id_rsa",
   "GITHUB_URL": "git@github.com:<git_user>/<git_repo>.git",
-  "GITHUB_BRANCH": "master",
+  "GITHUB_BRANCH": "main",
   "GITHUB_RECURSE_SUBMODULES": "True",
   "CONTAINER_NAME": "SBContainer",
   "REPO_ID": "sbs",
