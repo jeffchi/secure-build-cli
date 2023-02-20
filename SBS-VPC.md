@@ -220,9 +220,7 @@ env: |
 
 5. To prepare the env section of the contract, see [How to prepare the ENV section](https://cloud.ibm.com/docs/vpc?topic=vpc-about-contract_se#hpcr_contract_env).
 
-6. The `env` section of the contract must be encrypted. For more information, see [Encrypting the ENV Contents](https://cloud.ibm.com/docs/vpc?topic=vpc-about-contract_se#hpcr_contract_encrypt_env).
-
-**Note:** It is recommend that you encrypt the `env` section of the contract.
+6. It is recommend that you encrypt the `env` section of the contract. For more information, see [Encrypting the ENV Contents](https://cloud.ibm.com/docs/vpc?topic=vpc-about-contract_se#hpcr_contract_encrypt_env).
 
 7. You can get the encrypted workload section of the contract from [step 2](https://cloud.ibm.com/docs/vpc?topic=vpc-about-hpsb#hpvs_hpsb).
 
